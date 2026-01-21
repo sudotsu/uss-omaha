@@ -15,7 +15,7 @@ export function Letters({ data, isPrint = false }: LettersProps) {
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-16 page-break-avoid">
+          <div className={`text-center mb-16 page-break-avoid ${isPrint ? 'break-after-avoid' : ''}`}>
             <h2 className="text-brass mb-4">{data.heading}</h2>
             <div className="flex items-center justify-center space-x-3">
               <div className="h-px w-12 bg-brass/50"></div>
@@ -38,6 +38,7 @@ export function Letters({ data, isPrint = false }: LettersProps) {
                 title={doc.title}
                 image={doc.image}
                 excerpt={doc.excerpt}
+                isPrint={isPrint}
               />
             ))}
           </div>

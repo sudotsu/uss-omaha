@@ -8,9 +8,6 @@
   --color-brass: #C9A227;
   --color-brass-light: #E4C56A;
   --color-neutral-light: #CBD5E1;
-
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-serif: var(--font-merriweather), Georgia, serif;
 }
 
 @layer base {
@@ -20,27 +17,32 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-serif);
+    font-family: var(--font-merriweather), Georgia, serif;
   }
 
   h1 {
-    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
+    font-size: clamp(2.25rem, 5vw, 3.75rem);
+    font-weight: 700;
   }
 
   h2 {
-    @apply text-3xl md:text-4xl lg:text-5xl font-bold;
+    font-size: clamp(1.875rem, 4vw, 3rem);
+    font-weight: 700;
   }
 
   h3 {
-    @apply text-2xl md:text-3xl font-bold;
+    font-size: clamp(1.5rem, 3vw, 1.875rem);
+    font-weight: 700;
   }
 
   h4 {
-    @apply text-xl md:text-2xl font-semibold;
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    font-weight: 600;
   }
 
   p {
-    @apply text-base md:text-lg leading-relaxed;
+    font-size: clamp(1rem, 1.5vw, 1.125rem);
+    line-height: 1.75;
   }
 }
 
@@ -69,18 +71,58 @@
   }
 
   .content-container {
-    @apply max-w-7xl mx-auto px-6 lg:px-8;
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .content-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
 
   .section-spacing {
-    @apply py-16 md:py-24 lg:py-32;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  @media (min-width: 768px) {
+    .section-spacing {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .section-spacing {
+      padding-top: 8rem;
+      padding-bottom: 8rem;
+    }
   }
 
   .section-spacing-tight {
-    @apply py-12 md:py-16 lg:py-20;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
   }
 
-  /* Animations */
+  @media (min-width: 768px) {
+    .section-spacing-tight {
+      padding-top: 4rem;
+      padding-bottom: 4rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .section-spacing-tight {
+      padding-top: 5rem;
+      padding-bottom: 5rem;
+    }
+  }
+
   .animate-fade-in {
     animation: fadeIn 1.2s ease-in-out;
   }
@@ -103,13 +145,23 @@
 
 /* Print Styles */
 @media print {
+  html,
   body {
-    @apply text-[11pt] leading-normal;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.5;
   }
 
   .print-layout {
-    @apply bg-white;
+    background-color: white;
     color: var(--color-slate-deep);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .no-print {
@@ -117,8 +169,8 @@
   }
 
   .page-break {
-    page-break-before: always;
-    break-before: page;
+    page-break-after: always;
+    break-after: page;
   }
 
   .page-break-avoid {
@@ -126,46 +178,67 @@
     break-inside: avoid;
   }
 
+  .page-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .break-after-avoid {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
   .section-spacing,
   .section-spacing-tight {
-    @apply py-8;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 
   h1 {
-    @apply text-3xl;
+    font-size: 1.875rem;
   }
 
   h2 {
-    @apply text-2xl;
+    font-size: 1.5rem;
   }
 
   h3 {
-    @apply text-xl;
+    font-size: 1.25rem;
   }
 
   h4 {
-    @apply text-lg;
+    font-size: 1.125rem;
   }
 
   p {
-    @apply text-[11pt];
+    font-size: 11pt;
   }
 
   @page {
     size: letter;
-    margin: 0.75in;
+    margin: 0.5in;
   }
 
-  /* Ensure dark sections print with proper colors */
   .section-navy,
   .section-slate {
-    print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
   }
 
-  /* Disable animations in print */
   .animate-fade-in,
   .animate-fade-in-delay {
     animation: none !important;
+  }
+
+  .document-card-print {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-height: 9in;
+  }
+
+  .document-card-print .document-image-container {
+    max-height: 5.5in !important;
+    height: 5.5in !important;
   }
 }

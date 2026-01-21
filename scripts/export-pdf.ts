@@ -9,17 +9,11 @@ const OUTPUT_PATH = path.join(process.cwd(), 'dist', 'USS_Omaha_Memorial.pdf')
 
 let serverProcess: ChildProcess | null = null
 
-function detectPackageManager(): 'npm' {
-  // Enforcing npm to match user preference and package.json config
-  return 'npm'
-}
-
 async function startServer(): Promise<void> {
   return new Promise((resolve, reject) => {
-    const packageManager = detectPackageManager()
-    console.log(`🏗️  Building Next.js application using ${packageManager}...`)
+    console.log('🏗️  Building Next.js application using npm...')
 
-    const buildProcess = spawn(packageManager, ['run', 'build'], {
+    const buildProcess = spawn('npm', ['run', 'build'], {
       stdio: 'inherit',
       shell: true,
     })
@@ -33,7 +27,7 @@ async function startServer(): Promise<void> {
       console.log('✅ Build complete')
       console.log(`🚀 Starting server on port ${PORT}...`)
 
-      serverProcess = spawn(packageManager, ['run', 'start'], {
+      serverProcess = spawn('npm', ['run', 'start'], {
         env: { ...process.env, PORT: PORT.toString() },
         shell: true,
       })
@@ -83,6 +77,36 @@ async function exportPDF() {
       timeout: 60000
     })
 
+    console.log('⏳ Waiting for fonts and images to load...')
+
+    // Wait for fonts to be ready
+    await page.evaluate(() => document.fonts.ready)
+
+    // Wait for all images to complete loading
+    await page.evaluate(() => {
+      const images = Array.from(document.images)
+      return Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve()
+          return new Promise((resolve) => {
+            img.onload = resolve
+            img.onerror = resolve // Resolve even on error to prevent hanging
+          })
+        })
+      )
+    })
+
+    // Wait for two animation frames to ensure layout is settled
+    await page.evaluate(() => {
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(resolve)
+        })
+      })
+    })
+
+    console.log('✅ Page fully loaded and settled')
+
     const distDir = path.dirname(OUTPUT_PATH)
     if (!fs.existsSync(distDir)) {
       fs.mkdirSync(distDir, { recursive: true })
@@ -93,12 +117,12 @@ async function exportPDF() {
       path: OUTPUT_PATH,
       format: 'Letter',
       printBackground: true,
-      preferCSSPageSize: true,
+      preferCSSPageSize: false,
       margin: {
-        top: '0.75in',
-        right: '0.75in',
-        bottom: '0.75in',
-        left: '0.75in',
+        top: '0.5in',
+        right: '0.5in',
+        bottom: '0.5in',
+        left: '0.5in',
       },
     })
 

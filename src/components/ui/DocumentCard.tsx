@@ -5,14 +5,15 @@ interface DocumentCardProps {
   image: string
   excerpt: string
   className?: string
+  isPrint?: boolean
 }
 
-export function DocumentCard({ title, image, excerpt, className = '' }: DocumentCardProps) {
+export function DocumentCard({ title, image, excerpt, className = '', isPrint = false }: DocumentCardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-lg overflow-hidden page-break-avoid ${className}`}>
+    <div className={`bg-white rounded-lg shadow-lg overflow-hidden ${isPrint ? 'document-card-print' : 'page-break-avoid'} ${className}`}>
       {/* Document Image Frame */}
-      <div className="relative bg-neutral-light/30 p-4">
-        <div className="relative aspect-[8.5/11] bg-white border-2 border-neutral-light/50 shadow-inner">
+      <div className={`relative bg-neutral-light/30 p-4 ${isPrint ? 'document-image-container' : ''}`}>
+        <div className={`relative ${isPrint ? 'h-full' : 'aspect-[8.5/11]'} bg-white border-2 border-neutral-light/50 shadow-inner`}>
           <ImageWithFallback
             src={image}
             alt={title}
