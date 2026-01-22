@@ -1,9 +1,13 @@
 import { Agenda } from '@/components/sections/Agenda'
 import { Background } from '@/components/sections/Background'
+import { Budget } from '@/components/sections/Budget'
 import { Hero } from '@/components/sections/Hero'
 import { Letters } from '@/components/sections/Letters'
+import { LocationShift } from '@/components/sections/LocationShift'
 import { Mission } from '@/components/sections/Mission'
+import { Phases } from '@/components/sections/Phases'
 import { SubmarineFacts } from '@/components/sections/SubmarineFacts'
+import { Timeline } from '@/components/sections/Timeline'
 import { loadContent } from '@/lib/content'
 
 export default function HomePage() {
@@ -17,15 +21,10 @@ export default function HomePage() {
       <Background data={content.background} />
       <Letters data={content.letters} />
       <SubmarineFacts data={content.submarineFacts} />
-
-      {/* Placeholder for upcoming sections */}
-      <section className="section-slate section-spacing">
-        <div className="content-container text-center">
-          <p className="text-offwhite text-lg italic">
-            Additional sections coming in Batch 3: Timeline, Phases, Budget, Location, Site Plan, Gallery, Execution Photos, Why Now, Call to Action, Volunteer, Stakeholders
-          </p>
-        </div>
-      </section>
+      <Timeline data={content.timeline} />
+      <Phases data={content.phases} />
+      <Budget data={content.budget} />
+      <LocationShift data={content.locationShift} />
     </main>
   )
 }
