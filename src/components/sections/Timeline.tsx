@@ -1,3 +1,4 @@
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import type { Timeline as TimelineType } from '@/types/content'
 
@@ -25,7 +26,7 @@ export function Timeline({ data }: TimelineProps) {
             <h3 className="text-brass-light text-2xl font-serif mb-8 text-center">
               {data.operational.heading}
             </h3>
-            <div className="bg-navy-dark/30 rounded-lg p-8 border-2 border-brass/20">
+            <CardSurface variant="navy" padding="lg">
               <ul className="space-y-6">
                 {data.operational.events.map((event, index) => (
                   <li
@@ -41,7 +42,7 @@ export function Timeline({ data }: TimelineProps) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </CardSurface>
           </div>
 
           {/* Post-Decommissioning Timeline */}
@@ -49,7 +50,7 @@ export function Timeline({ data }: TimelineProps) {
             <h3 className="text-brass-light text-2xl font-serif mb-8 text-center">
               {data.postDecommissioning.heading}
             </h3>
-            <div className="bg-navy-dark/30 rounded-lg p-8 border-2 border-brass/20">
+            <CardSurface variant="navy" padding="lg">
               <ul className="space-y-6">
                 {data.postDecommissioning.events.map((event, index) => (
                   <li
@@ -65,7 +66,7 @@ export function Timeline({ data }: TimelineProps) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </CardSurface>
           </div>
 
           {/* Bottom Accent */}

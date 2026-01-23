@@ -1,3 +1,4 @@
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import type { Phases as PhasesType } from '@/types/content'
 
@@ -23,12 +24,15 @@ export function Phases({ data }: PhasesProps) {
           {/* Phases Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {data.phaseList.map((phase) => (
-              <div
+              <CardSurface
                 key={phase.number}
-                className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-brass/10 hover:border-brass/30 transition-colors duration-200"
+                variant="light"
+                padding="md"
+                interactive
+                className="overflow-hidden"
               >
                 {/* Phase Header */}
-                <div className="bg-navy text-brass px-6 py-4 flex items-center justify-between">
+                <div className="bg-navy text-brass px-6 py-4 flex items-center justify-between -m-6 mb-6">
                   <div>
                     <div className="text-sm font-serif uppercase tracking-wider opacity-80">
                       Phase {phase.number}
@@ -43,7 +47,7 @@ export function Phases({ data }: PhasesProps) {
                 </div>
 
                 {/* Phase Content */}
-                <div className="p-6 space-y-4">
+                <div className="space-y-4">
                   {/* Description */}
                   <p className="text-slate-deep leading-relaxed">
                     {phase.description}
@@ -78,7 +82,7 @@ export function Phases({ data }: PhasesProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </CardSurface>
             ))}
           </div>
 

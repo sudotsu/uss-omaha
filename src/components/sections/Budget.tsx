@@ -1,3 +1,4 @@
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import type { Budget as BudgetType } from '@/types/content'
 
@@ -21,9 +22,9 @@ export function Budget({ data }: BudgetProps) {
           </div>
 
           {/* Budget Card */}
-          <div className="bg-white rounded-lg shadow-2xl overflow-hidden border-4 border-brass/20">
+          <CardSurface variant="light" padding="md" className="overflow-hidden shadow-2xl border-4">
             {/* Header */}
-            <div className="bg-gradient-to-r from-navy to-navy-dark px-8 py-6 border-b-4 border-brass">
+            <div className="bg-gradient-to-r from-navy to-navy-dark px-8 py-6 border-b-4 border-brass -m-6 mb-6">
               <div className="text-center">
                 <div className="text-brass text-sm font-serif uppercase tracking-widest mb-2">
                   Total Cost Remaining
@@ -35,15 +36,15 @@ export function Budget({ data }: BudgetProps) {
             </div>
 
             {/* Note */}
-            <div className="px-8 py-6 bg-brass/5">
+            <div className="px-2 py-4 bg-brass/5 rounded-md">
               <p className="text-slate-deep text-center leading-relaxed italic">
                 {data.note}
               </p>
             </div>
 
             {/* Visual Accent */}
-            <div className="h-2 bg-gradient-to-r from-transparent via-brass to-transparent"></div>
-          </div>
+            <div className="h-2 bg-gradient-to-r from-transparent via-brass to-transparent -mx-6 -mb-6 mt-6"></div>
+          </CardSurface>
 
           {/* Bottom Decorative Elements */}
           <div className="mt-12 flex justify-center space-x-8">

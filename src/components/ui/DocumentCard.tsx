@@ -1,3 +1,4 @@
+import { CardSurface } from './CardSurface'
 import { ImageWithFallback } from './ImageWithFallback'
 
 interface DocumentCardProps {
@@ -10,9 +11,14 @@ interface DocumentCardProps {
 
 export function DocumentCard({ title, image, excerpt, className = '', isPrint = false }: DocumentCardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-lg overflow-hidden ${isPrint ? 'document-card-print' : 'page-break-avoid'} ${className}`}>
+    <CardSurface
+      variant="light"
+      padding="md"
+      interactive={!isPrint}
+      className={`overflow-hidden ${isPrint ? 'document-card-print' : ''} ${className}`}
+    >
       {/* Document Image Frame */}
-      <div className={`relative bg-neutral-light/30 p-4 ${isPrint ? 'document-image-container' : ''}`}>
+      <div className={`relative bg-neutral-light/30 p-4 -m-6 mb-6 ${isPrint ? 'document-image-container' : ''}`}>
         <div className={`relative ${isPrint ? 'h-full' : 'aspect-[8.5/11]'} bg-white border-2 border-neutral-light/50 shadow-inner`}>
           <ImageWithFallback
             src={image}
@@ -24,7 +30,7 @@ export function DocumentCard({ title, image, excerpt, className = '', isPrint = 
       </div>
 
       {/* Document Details */}
-      <div className="p-6">
+      <div>
         <h4 className="font-serif font-bold text-navy mb-3 text-lg">
           {title}
         </h4>
@@ -33,6 +39,6 @@ export function DocumentCard({ title, image, excerpt, className = '', isPrint = 
           &ldquo;{excerpt}&rdquo;
         </p>
       </div>
-    </div>
+    </CardSurface>
   )
 }
