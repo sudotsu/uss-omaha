@@ -12,10 +12,12 @@ A modern, responsive memorial presentation honoring the service and legacy of US
 
 ## Getting Started
 
-### Prerequisites
-
+### Preparation
 - Node.js 24+ (see `.nvmrc`)
 - npm
+
+### Admin Tools (Local)
+- **Image Renamer**: `http://localhost:3000/admin/renamer` (Rename extracted images)
 
 ### Installation
 
