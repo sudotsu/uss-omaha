@@ -195,7 +195,7 @@ whyNow:
 callToAction:
   memorial:
     heading: "USS Omaha Call to Action"
-    tagline: "The Beginning - It's Time to \"Git-R-Done\""
+    tagline: "Honor the Past. Build the Future."
     donationHeading: "Support the Memorial"
     primaryOrg:
       name: "United States Submarine Veterans Charitable Foundation (USSVCF)"
@@ -216,7 +216,7 @@ callToAction:
     pledgeFormUrl: "/forms/Pledge_Form_Blank_Final.pdf"
   donor:
     heading: "USS Omaha Call to Action"
-    tagline: "The Beginning - It's Time to \"Git-R-Done\""
+    tagline: "Honor the Past. Build the Future."
     donationHeading: "Invest in Legacy"
     primaryOrg:
       name: "United States Submarine Veterans Charitable Foundation (USSVCF)"
