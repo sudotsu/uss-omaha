@@ -8,6 +8,7 @@ export interface ContentData {
   submarineFacts: SubmarineFacts
   timeline: Timeline
   phases: Phases
+  fundraisingProgress: FundraisingProgress
   budget: Budget
   locationShift: LocationShift
   sitePlan: SitePlan
@@ -38,17 +39,24 @@ export interface Hero {
 
 export interface Mission {
   heading: string
-  body: string
+  statement: string
+  highlights: string[]
 }
 
 export interface Agenda {
   heading: string
-  items: string[]
+  items: AgendaItem[]
+}
+
+export interface AgendaItem {
+  title: string
+  description: string
 }
 
 export interface Background {
   heading: string
-  body: string
+  paragraphs: string[]
+  keyPoints: string[]
   milestones: Milestone[]
 }
 
@@ -60,10 +68,11 @@ export interface Milestone {
 
 export interface Letters {
   heading: string
-  documents: Document[]
+  description: string
+  items: LetterItem[]
 }
 
-export interface Document {
+export interface LetterItem {
   title: string
   image: string
   excerpt: string
@@ -82,17 +91,13 @@ export interface Fact {
 
 export interface Timeline {
   heading: string
-  operational: TimelineSection
-  postDecommissioning: TimelineSection
+  milestones: TimelineMilestone[]
 }
 
-export interface TimelineSection {
-  heading: string
-  events: TimelineEvent[]
-}
-
-export interface TimelineEvent {
-  item: string
+export interface TimelineMilestone {
+  date: string
+  title: string
+  details: string
 }
 
 export interface Phases {
@@ -107,6 +112,13 @@ export interface Phase {
   status: string
   cost: string
   percentComplete: number
+}
+
+export interface FundraisingProgress {
+  raised: number
+  goal: number
+  donorCount: number
+  lastGiftTime: string
 }
 
 export interface Budget {
@@ -181,6 +193,7 @@ export interface CallToActionMode {
   donationHeading: string
   primaryOrg: Organization
   alternateOrg: AlternateOrganization
+  trustIndicators?: string[]
   taxNote: string
   pledgeFormText: string
   pledgeFormUrl: string
@@ -191,8 +204,8 @@ export interface Organization {
   ein: string
   website: string
   email: string
-  mailingAddress: MailingAddress
   phone: string
+  mailingAddress: MailingAddress
 }
 
 export interface AlternateOrganization {
@@ -258,7 +271,21 @@ export interface Presenter {
 }
 
 export interface Footer {
+  address: string[]
+  contact: FooterContact
+  quickLinks: QuickLink[]
   logos: Logo[]
+}
+
+export interface FooterContact {
+  name: string
+  email: string
+  phone: string
+}
+
+export interface QuickLink {
+  label: string
+  href: string
 }
 
 export interface Logo {
@@ -269,6 +296,9 @@ export interface Logo {
 export interface Navy250 {
   logo: string
   heading: string
+  deadline?: string
+  deadlineLabel?: string
+  deadlineText?: string
   subheading: string
   subtitle: string
   images: string[]

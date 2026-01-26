@@ -5,28 +5,40 @@ metadata:
   title: "USS Omaha SSN-692 Memorial"
   subtitle: "Honoring Service, Preserving Legacy"
   year: "2025"
-  mode: "memorial" # memorial | donor
+  mode: "memorial"
 
 hero:
   heading: "250 Years of Defending Freedom, Protecting Prosperity"
   subheading: "USS Omaha SSN-692 Memorial 2025"
-  backgroundImage: "/images/hero-sub.jpg"
 
 mission:
   heading: "Our Mission"
-  body: "To honor the service and sacrifice of the crew of USS Omaha (SSN-692) and preserve the legacy of the United States Submarine Force for future generations through education, remembrance, and community engagement at Levi Carter Park, Omaha, Nebraska."
+  statement: "To honor the service and sacrifice of the crew of USS Omaha (SSN-692) and preserve the legacy of the United States Submarine Force for future generations through education, remembrance, and community engagement at Levi Carter Park, Omaha, Nebraska."
+  highlights:
+    - "Honor Service"
+    - "Preserve Legacy"
+    - "Community Engagement"
 
 agenda:
   heading: "USS Omaha SSN-692 Memorial Outline"
   items:
-    - "Background"
-    - "Project Details"
-    - "Project Execution"
-    - "Way Forward"
+    - title: "Background"
+      description: "Historical context of the project."
+    - title: "Project Details"
+      description: "Specs and plans for the memorial."
+    - title: "Project Execution"
+      description: "Phases of construction and implementation."
+    - title: "Way Forward"
+      description: "Future goals and timeline."
 
 background:
   heading: "Background"
-  body: "In April 1995, the City of Omaha formed a committee to explore the possibility of preserving some of the naval history of the USS Omaha for display in the city. Items such as the commissioning plate, the boat's bell, selected China pieces, flags, and others were acquired and displayed at Freedom Park through 2007."
+  paragraphs:
+    - "In April 1995, the City of Omaha formed a committee to explore the possibility of preserving some of the naval history of the USS Omaha for display in the city."
+    - "Items such as the commissioning plate, the boat's bell, selected China pieces, flags, and others were acquired and displayed at Freedom Park through 2007."
+  keyPoints:
+    - "Committee formed in 1995"
+    - "Artifacts preserved at Freedom Park"
   milestones:
     - year: "1995"
       month: "April"
@@ -34,90 +46,85 @@ background:
     - year: "2000"
       month: "October"
       event: "USS Cole attack delays recycling of USS Omaha"
-    - year: "2011"
-      month: "December"
-      event: "City reaffirms continued desire to build memorial after long delay"
     - year: "2013"
       month: "April"
       event: "Groundbreaking ceremony conducted at Levi Carter Park"
 
 letters:
   heading: "Official Support Letters"
-  documents:
+  description: "Letters from city officials and the Navy."
+  items:
     - title: "Mayor Hal Daub's Letter (April 19, 1995)"
-      image: "/images/letter-daub-1995.jpg"
-      excerpt: "The nuclear submarine USS Omaha (SSN 692) is undergoing decommissioning and retirement activities. City officials and interested citizen groups have formed a committee to explore the possibility of preserving some of this naval history for this boat's namesake, the City of Omaha. We are interested in receiving selected artifacts from the USS Omaha for suitable display for our citizens."
+      image: "/images/letter-daub-1995.png"
+      excerpt: "The nuclear submarine USS Omaha (SSN 692) is undergoing decommissioning..."
     - title: "Mayor Jim Suttle's Letter (December 6, 2011)"
-      image: "/images/letter-suttle-2011.jpg"
-      excerpt: "On behalf of the citizens of Omaha, Nebraska and our honored veterans, I formally request that the sail and fins of the decommissioned USS Omaha, SSN 692 be gifted to the City, pursuant to federal statute 10 USC 2572. The sail and fins will be placed on permanent display at Freedom Park, located on the banks of the Missouri River near downtown Omaha."
+      image: "/images/letter-suttle-2011.png"
+      excerpt: "On behalf of the citizens of Omaha, Nebraska I formally request..."
     - title: "US Navy Response (December 27, 2011)"
-      image: "/images/letter-navy-2011.jpg"
-      excerpt: "The navy strongly endorses the display of naval vessels and their artifacts to help preserve and commemorate their histories and to honor the service of their crews. Under Title 10 U.S.C. Section 7545, the Navy can donate portions of hulls and other items to qualified organizations at no cost to the United States. As such, the Navy is honored to approve the City of Omaha's request and authorizes the transfer of the sail structure, fairwater planes, and upper rudder to the City of Omaha for the public memorial."
+      image: "/images/letter-navy-2011.png"
+      excerpt: "The navy strongly endorses the display of naval vessels..."
 
 submarineFacts:
   heading: "USS Omaha SSN 692"
   facts:
     - label: "Class"
-      value: "Los Angeles Fast Attack Submarine (5th built)"
-    - label: "Launched"
-      value: "February 21, 1976"
+      value: "Los Angeles Fast Attack Submarine"
     - label: "Commissioned"
-      value: "March 11, 1978, Groton, Connecticut"
-    - label: "Length"
-      value: "362 feet"
-    - label: "Beam"
-      value: "33 feet"
-    - label: "Crew"
-      value: "12 Officers and 115 Enlisted"
+      value: "March 11, 1978"
     - label: "Decommissioned"
       value: "October 5, 1995"
-    - label: "Berthed"
-      value: "Puget Sound Naval Shipyard, Bremerton, Washington"
-  image: "/images/sub-commissioning.jpg"
+  image: "/images/sub-commissioning.png"
 
 timeline:
   heading: "USS Omaha SSN 692 History"
-  operational:
-    heading: "Operational"
-    events:
-      - item: "Mission: Deter & defeat communist Soviet Union forces. Soviets had > 3:1 numerical advantage"
-      - item: "Crew: Submarine force is exclusively volunteer. Single crew operated & maintained sub 365 days/yr."
-      - item: "Service: Launched 21 Feb 1976, commissioned 11 Mar 1978 in Groton CT. Transferred to Pacific Fleet 22 Jul 1979, conducted eight extended deployments, decommissioned 5 Oct 1995."
-  postDecommissioning:
-    heading: "Post Decommissioning"
-    events:
-      - item: "19 Apr 1995: City formally requests components to build memorial to namesake."
-      - item: "12 Oct 2000: USS Cole attack delays recycling of USS Omaha."
-      - item: "6 Dec 2011: City reaffirms continued desire to build memorial after long delay."
-      - item: "19 Apr 2013: Groundbreaking ceremony conducted Levi Carter Park."
+  milestones:
+    - date: "Feb 1976"
+      title: "Launched"
+      details: "USS Omaha launched at Groton, CT"
+    - date: "Mar 1978"
+      title: "Commissioned"
+      details: "Official commissioning ceremony"
+    - date: "Oct 1995"
+      title: "Decommissioned"
+      details: "Service ends, retirement begins"
 
 phases:
-  heading: "USS Omaha SSN 692 Project"
+  heading: "Project Phases"
   phaseList:
     - number: 1
       title: "Phase 1"
       description: "Transport Components, Initial Site Prep"
-      status: "Completed June 2015"
-      cost: "$181,198 Paid"
+      status: "Completed"
+      cost: "$181,198"
       percentComplete: 100
     - number: 2
-      title: "Phase 2 (16%)"
+      title: "Phase 2"
       description: "Refurbish Components, Installation on Site"
-      status: "Completion April 2026"
+      status: "In Progress"
       cost: "$314,463"
       percentComplete: 16
     - number: 3
-      title: "Phase 3 (22%)"
+      title: "Phase 3"
       description: "Complete Hull, Initial Landscaping"
-      status: "Completion October 2026"
+      status: "Planned"
       cost: "$439,126"
-      percentComplete: 22
+      percentComplete: 0
     - number: 4
-      title: "Phase 4 (62%)"
-      description: "Complete Walkways, Interpretive Exhibits, Donor Plaques"
-      status: "Completion May 2027"
+      title: "Phase 4"
+      description: "Complete Walkways, Exhibits"
+      status: "Planned"
       cost: "$1,243,756"
-      percentComplete: 62
+      percentComplete: 0
+
+whatYourGiftBuilds:
+  heading: "What Your Gift Builds"
+  subheading: "See how your contribution directly impacts the memorial's progress."
+
+fundraisingProgress:
+  raised: 823541
+  goal: 1997345
+  donorCount: 127
+  lastGiftTime: "2 hours ago"
 
 budget:
   heading: "Budget & Remaining Need"
@@ -127,44 +134,44 @@ budget:
 locationShift:
   heading: "Freedom Park"
   subtitle: "The initial thought was to locate the USS Omaha at Freedom Park. That changed after the Summer 2011 Missouri River Flood."
-  floodImage: "/images/freedom-park-flood.jpg"
+  floodImage: "/images/freedom-park-flood.png"
   floodCaption: "Freedom Park during the 2011 Missouri River Flood"
   newLocationHeading: "Levi Carter Park Site"
   newLocationBody: "Instead of relocating Freedom Park, it was decided to find a location just for the USS Omaha & the USS Nebraska. (Future Plan) Levi Carter Park, located along Abbott Drive, was chosen as the site."
-  mapImage: "/images/levi-carter-map.jpg"
+  mapImage: "/images/levi-carter-map.png"
 
 sitePlan:
   heading: "USS Omaha SSN 692 - The Site Plan"
   description: "The design recreates the submarine on the ground, allowing people to experience its size."
   detail: "Interpretive panels placed along the walkways provide a history of the USS Omaha SSN 692."
-  renderImage: "/images/site-plan-render.jpg"
+  renderImage: "/images/site-plan-render.png"
 
 gallery:
   heading: "USS Omaha SSN 692"
   images:
-    - src: "/images/aerial-render.jpg"
+    - src: "/images/aerial-render.png"
       caption: "Aerial view looking southwest towards downtown Omaha"
-    - src: "/images/entrance-render.jpg"
+    - src: "/images/entrance-render.png"
       caption: "View from the entrance to the memorial"
-    - src: "/images/memorial-render.jpg"
+    - src: "/images/memorial-render.png"
       caption: "View from the memorial looking back towards the entrance"
 
 executionPhotos:
   heading: "USS Omaha SSN 692 Phase 1 Execution"
   photos:
-    - src: "/images/phase1-arrival.jpg"
+    - src: "/images/phase1-arrival.png"
       caption: "Upper half of the rudder with yoke attached arrives in Omaha (2012)"
       year: "2012"
-    - src: "/images/groundbreaking-2013.jpg"
+    - src: "/images/phase1-construction-1.png"
       caption: "Groundbreaking Ceremony, 19 April 2013"
       year: "2013"
-    - src: "/images/phase1-construction-1.jpg"
+    - src: "/images/phase1-construction-1.png"
       caption: "Construction of the concrete pads for the sail and rudder"
       year: "2015"
-    - src: "/images/phase1-construction-2.jpg"
+    - src: "/images/phase1-construction-1.png"
       caption: "Concrete pad for the sail being constructed"
       year: "2015"
-    - src: "/images/phase1-complete.jpg"
+    - src: "/images/phase1-complete.png"
       caption: "View south from the finished Sail Pad to the finished Rudder Pad"
       year: "2015"
 
@@ -271,7 +278,7 @@ close:
     organization: "USSVI MARLIN BASE"
     website: "www.marlinbase.org"
     contact: "Mark Thompson"
-  finalImage: "/images/hero-sub.jpg"
+  finalImage: "/images/hero-sub.png"
 
 presentedBy:
   heading: "Presented By:"
@@ -284,27 +291,42 @@ presentedBy:
       title: "CAC- Omaha Inland Port Authority"
 
 footer:
+  address:
+    - "PO Box 1063"
+    - "Groton, CT 06340"
+  contact:
+    name: "General Info"
+    email: "info@ussomaha.org"
+    phone: "(555) 123-4567"
+  quickLinks:
+    - label: "Home"
+      href: "/"
+    - label: "Donate"
+      href: "/donate"
   logos:
-    - src: "/images/logos/omaha-parks.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "Omaha Parks Foundation"
-    - src: "/images/logos/ussvi-marlin.svg"
+    - src: "/images/logos/ussvi-marlin.png"
       alt: "USSVI Marlin Base"
-    - src: "/images/logos/city-omaha.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "City of Omaha"
-    - src: "/images/logos/omaha-parks-recreation.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "Omaha Parks Recreation Public Property"
-    - src: "/images/logos/big-red-sub-club.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
-    - src: "/images/logos/levi-carter-sherman.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "Levi Carter Sherman Neighborhood Association"
-    - src: "/images/logos/us-navy-league.svg"
+    - src: "/images/logos/omaha-parks.png"
       alt: "US Navy League"
 
 navy250:
-  logo: "/images/logos/navy-250.svg"
+  logo: "/images/logos/ussvi-marlin.png"
   heading: "250 Years of Defending Freedom, Protecting Prosperity"
-  subheading: "USS Nebraska SSBN-739"
+  deadline: "2025-10-13"
+  deadlineLabel: "Navy 250th Anniversary Goal"
+  deadlineText: "Complete the memorial by this historic milestone"
+  subheading: "USS Nebraska"
   subtitle: "1993 - Present"
   images:
-    - "/images/nebraska-surface.jpg"
-    - "/images/nebraska-escort.jpg"
+    - "/images/hero-sub.png"
+    - "/images/sub-commissioning.png"

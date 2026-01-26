@@ -17,6 +17,9 @@ export function Letters({ data, isPrint = false }: LettersProps) {
           {/* Section Header */}
           <div className={`text-center mb-16 page-break-avoid ${isPrint ? 'break-after-avoid' : ''}`}>
             <h2 className="text-brass mb-4">{data.heading}</h2>
+            {data.description && (
+              <p className="text-lg text-offwhite/80 max-w-2xl mx-auto mb-6">{data.description}</p>
+            )}
             <div className="flex items-center justify-center space-x-3">
               <div className="h-px w-12 bg-brass/50"></div>
               <div className="w-1.5 h-1.5 bg-brass rotate-45"></div>
@@ -32,7 +35,7 @@ export function Letters({ data, isPrint = false }: LettersProps) {
                 : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
             }
           >
-            {data.documents.map((doc, index) => (
+            {data.items.map((doc, index) => (
               <DocumentCard
                 key={index}
                 title={doc.title}

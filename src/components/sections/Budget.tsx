@@ -1,7 +1,6 @@
-import React from 'react'
-import type { Budget as BudgetType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { Budget as BudgetType } from '@/types/content'
 
 interface BudgetProps {
   data: BudgetType

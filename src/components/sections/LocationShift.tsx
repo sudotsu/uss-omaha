@@ -1,8 +1,7 @@
-import React from 'react'
-import type { LocationShift as LocationShiftType } from '@/types/content'
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback'
-import { CardSurface } from '@/components/ui/CardSurface'
+import type { LocationShift as LocationShiftType } from '@/types/content'
 
 interface LocationShiftProps {
   data: LocationShiftType
@@ -23,9 +22,11 @@ export function LocationShift({ data }: LocationShiftProps) {
             </div>
           </div>
 
-          {/* Introduction */}
+          {/* Intro Subtitle */}
           <div className="text-center mb-12">
-            <p className="text-xl text-slate-deep leading-relaxed max-w-3xl mx-auto">{data.subtitle}</p>
+            <p className="text-xl text-slate-deep leading-relaxed max-w-3xl mx-auto">
+              {data.subtitle}
+            </p>
           </div>
 
           {/* Freedom Park Flood Image */}

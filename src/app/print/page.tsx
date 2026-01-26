@@ -11,7 +11,7 @@ export default function PrintPage() {
 
   return (
     <main className="print-layout">
-      <Hero data={content.hero} isPrint />
+      <Hero data={content.hero} navy250={content.navy250} isPrint />
       <Mission data={content.mission} isPrint />
 
       <div className="page-break" />

@@ -1,8 +1,7 @@
-import React from 'react'
-import type { SitePlan as SitePlanType } from '@/types/content'
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback'
-import { CardSurface } from '@/components/ui/CardSurface'
+import type { SitePlan as SitePlanType } from '@/types/content'
 
 interface SitePlanProps {
   data: SitePlanType
@@ -23,32 +22,33 @@ export function SitePlan({ data }: SitePlanProps) {
             </div>
           </div>
 
-          {/* Description */}
-          <div className="text-center mb-8 space-y-4">
-            <p className="text-xl text-offwhite leading-relaxed max-w-3xl mx-auto">{data.description}</p>
-            <p className="text-lg text-offwhite/80 leading-relaxed max-w-2xl mx-auto">{data.detail}</p>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Content */}
+            <div className="space-y-8">
+              <p className="text-offwhite text-xl leading-relaxed font-serif">
+                {data.description}
+              </p>
 
-          {/* Site Plan Render */}
-          <CardSurface variant="slate" padding="sm" className="mt-12">
-            <div className="relative aspect-[16/10] bg-navy/20 rounded-md overflow-hidden">
-              <ImageWithFallback
-                src={data.renderImage}
-                alt={data.heading}
-                fill
-                className="object-contain"
-              />
+              <CardSurface variant="navy" padding="md" className="border-l-4 border-brass">
+                <p className="text-offwhite/90 italic">{data.detail}</p>
+              </CardSurface>
             </div>
-          </CardSurface>
 
-          {/* Bottom Accent */}
-          <div className="mt-16 flex justify-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-brass/50 rotate-45"></div>
-              <div className="w-2 h-2 bg-brass/75 rotate-45"></div>
-              <div className="w-2 h-2 bg-brass rotate-45"></div>
-              <div className="w-2 h-2 bg-brass/75 rotate-45"></div>
-              <div className="w-2 h-2 bg-brass/50 rotate-45"></div>
+            {/* Render Image */}
+            <div className="relative">
+              <CardSurface variant="navy" padding="sm" className="bg-navy-dark/50">
+                <div className="relative aspect-square md:aspect-[4/3] w-full overflow-hidden rounded-md border border-brass/20">
+                  <ImageWithFallback
+                    src={data.renderImage}
+                    alt="Site Plan Rendering"
+                    fill
+                    className="object-cover hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+              </CardSurface>
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -right-4 w-24 h-24 border-t-2 border-r-2 border-brass/30 rounded-tr-3xl hidden md:block"></div>
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 border-b-2 border-l-2 border-brass/30 rounded-bl-3xl hidden md:block"></div>
             </div>
           </div>
         </div>

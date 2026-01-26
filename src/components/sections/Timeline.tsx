@@ -1,7 +1,6 @@
-import React from 'react'
-import type { Timeline as TimelineType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { Timeline as TimelineType } from '@/types/content'
 
 interface TimelineProps {
   data: TimelineType
@@ -22,38 +21,22 @@ export function Timeline({ data }: TimelineProps) {
             </div>
           </div>
 
-          {/* Operational Timeline */}
-          <div className="mb-16">
-            <h3 className="text-brass-light text-2xl font-serif mb-8 text-center">{data.operational.heading}</h3>
-            <CardSurface variant="navy" padding="lg">
-              <ul className="space-y-6">
-                {data.operational.events.map((event, index) => (
-                  <li key={index} className="flex items-start space-x-4 group">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-3 h-3 bg-brass rotate-45 group-hover:scale-110 transition-transform duration-200"></div>
-                    </div>
-                    <p className="text-offwhite text-lg leading-relaxed flex-1">{event.item}</p>
-                  </li>
-                ))}
-              </ul>
-            </CardSurface>
-          </div>
-
-          {/* Post-Decommissioning Timeline */}
-          <div>
-            <h3 className="text-brass-light text-2xl font-serif mb-8 text-center">{data.postDecommissioning.heading}</h3>
-            <CardSurface variant="navy" padding="lg">
-              <ul className="space-y-6">
-                {data.postDecommissioning.events.map((event, index) => (
-                  <li key={index} className="flex items-start space-x-4 group">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-3 h-3 bg-brass rotate-45 group-hover:scale-110 transition-transform duration-200"></div>
-                    </div>
-                    <p className="text-offwhite text-lg leading-relaxed flex-1">{event.item}</p>
-                  </li>
-                ))}
-              </ul>
-            </CardSurface>
+          <div className="space-y-8">
+             {data.milestones.map((milestone, index) => (
+               <CardSurface key={index} variant="navy" padding="lg">
+                 <div className="flex flex-col md:flex-row md:items-start gap-6">
+                   <div className="md:w-32 flex-shrink-0">
+                     <span className="inline-block px-3 py-1 border border-brass/30 rounded text-brass font-serif font-bold bg-brass/10">
+                       {milestone.date}
+                     </span>
+                   </div>
+                   <div className="flex-1">
+                     <h3 className="text-xl text-white font-bold mb-2">{milestone.title}</h3>
+                     <p className="text-white/80 leading-relaxed">{milestone.details}</p>
+                   </div>
+                 </div>
+               </CardSurface>
+             ))}
           </div>
 
           {/* Bottom Accent */}

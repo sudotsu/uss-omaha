@@ -24,10 +24,23 @@ export function Background({ data, isPrint = false }: BackgroundProps) {
           </div>
 
           {/* Introduction */}
-          <div className="mb-16 page-break-avoid">
-            <p className="text-xl text-slate-deep leading-relaxed text-center max-w-3xl mx-auto">
-              {data.body}
-            </p>
+          <div className="mb-16 page-break-avoid space-y-6">
+            {data.paragraphs.map((para, index) => (
+              <p key={index} className="text-xl text-slate-deep leading-relaxed text-center max-w-3xl mx-auto">
+                {para}
+              </p>
+            ))}
+
+            {data.keyPoints && (
+              <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mt-8">
+                {data.keyPoints.map((point, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div className="w-1.5 h-1.5 bg-brass rotate-45"></div>
+                    <span className="text-lg text-navy font-serif italic">{point}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Milestones Timeline */}

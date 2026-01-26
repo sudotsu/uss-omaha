@@ -1,26 +1,18 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
-import type { WhyNow as WhyNowType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { WhyNow as WhyNowType } from '@/types/content'
 
 interface WhyNowProps {
   data: WhyNowType
 }
 
 export function WhyNow({ data }: WhyNowProps) {
-  const [showAll, setShowAll] = useState(true)
-
-  const displayedProjects = useMemo(
-    () => (showAll ? data.projects : data.projects.slice(0, 5)),
-    [showAll, data.projects]
-  )
-
   return (
     <section id="why-now" className="section-light section-spacing">
       <Container>
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-navy mb-4">{data.heading}</h2>
             <div className="flex items-center justify-center space-x-3">
@@ -28,57 +20,28 @@ export function WhyNow({ data }: WhyNowProps) {
               <div className="w-1.5 h-1.5 bg-brass rotate-45"></div>
               <div className="h-px w-12 bg-brass"></div>
             </div>
+            <p className="text-slate-deep text-lg font-serif italic mt-6">{data.tagline}</p>
           </div>
 
-          <div className="flex justify-center mb-8">
-            <div className="inline-flex rounded-lg border-2 border-brass/20 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowAll(false)}
-                className={`px-6 py-2 font-serif transition-colors focus:outline-none focus:ring-2 focus:ring-brass/40 ${
-                  !showAll
-                    ? 'bg-brass text-navy font-bold'
-                    : 'bg-white text-slate-deep hover:bg-brass/10'
-                }`}
-              >
-                Top 5
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAll(true)}
-                className={`px-6 py-2 font-serif transition-colors focus:outline-none focus:ring-2 focus:ring-brass/40 ${
-                  showAll
-                    ? 'bg-brass text-navy font-bold'
-                    : 'bg-white text-slate-deep hover:bg-brass/10'
-                }`}
-              >
-                All Projects
-              </button>
-            </div>
-          </div>
-
-          <CardSurface variant="light" padding="md">
+          <CardSurface variant="light" padding="lg">
             <div className="space-y-4">
-              {displayedProjects.map((project, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-4 border-b border-neutral-light/30 last:border-b-0 hover:bg-brass/5 transition-colors px-4 -mx-4 rounded-md"
-                >
-                  <span className="text-slate-deep font-medium text-lg flex-1">{project.name}</span>
-                  <span className="text-navy font-serif font-bold text-lg ml-4">{project.cost}</span>
+              {data.projects.map((project, index) => (
+                <div key={index} className="flex justify-between items-center border-b border-slate/20 pb-4 last:border-0">
+                  <span className="text-slate-deep font-medium">{project.name}</span>
+                  <span className="text-navy font-bold font-serif">{project.cost}</span>
                 </div>
               ))}
             </div>
-          </CardSurface>
 
-          <CardSurface variant="light" padding="lg" className="mt-12 border-4 border-brass/40">
-            <div className="text-center">
-              <div className="text-brass text-sm font-serif uppercase tracking-widest mb-2">{data.tagline}</div>
-              <h3 className="text-navy text-3xl font-serif font-bold mb-3">{data.memorial.name}</h3>
-              <div className="text-brass-light text-4xl font-serif font-bold">{data.memorial.cost}</div>
+            <div className="mt-8 pt-8 border-t-2 border-brass">
+              <div className="flex justify-between items-center">
+                <span className="text-navy font-bold text-xl uppercase tracking-wider">{data.memorial.name}</span>
+                <span className="text-brass font-bold font-serif text-2xl">{data.memorial.cost}</span>
+              </div>
             </div>
           </CardSurface>
 
+          {/* Bottom Accent */}
           <div className="mt-16 flex justify-center">
             <div className="h-1 w-24 bg-gradient-to-r from-transparent via-brass to-transparent"></div>
           </div>

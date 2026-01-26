@@ -1,8 +1,10 @@
-import React from 'react'
-import type { CallToActionSection, Metadata } from '@/types/content'
-import { Container } from '@/components/ui/Container'
-import { CardSurface } from '@/components/ui/CardSurface'
+'use client'
+
 import { Button } from '@/components/ui/Button'
+import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { CallToActionSection, Metadata } from '@/types/content'
+import { useEffect, useState } from 'react'
 
 interface CallToActionProps {
   data: CallToActionSection
@@ -10,7 +12,22 @@ interface CallToActionProps {
 }
 
 export function CallToAction({ data, mode }: CallToActionProps) {
+  const [selectedBuilds, setSelectedBuilds] = useState<string | null>(null)
   const content = mode === 'donor' ? data.donor : data.memorial
+
+  useEffect(() => {
+    // Check URL hash for ?builds= parameter
+    const hash = window.location.hash
+    const params = new URLSearchParams(hash.split('?')[1] || '')
+    const buildsParam = params.get('builds')
+    if (buildsParam) {
+      setSelectedBuilds(decodeURIComponent(buildsParam))
+      // Smooth scroll to this section
+      setTimeout(() => {
+        document.getElementById('call-to-action')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [])
 
   return (
     <section id="call-to-action" className="section-slate section-spacing">
@@ -26,15 +43,25 @@ export function CallToAction({ data, mode }: CallToActionProps) {
             <p className="text-brass-light text-xl font-serif mt-6 italic">{content.tagline}</p>
           </div>
 
+          {/* Selected Build Confirmation */}
+          {selectedBuilds && (
+            <CardSurface variant="navy" padding="md" className="mb-8 border-2 border-brass">
+              <div className="text-center">
+                <div className="text-brass text-sm font-serif uppercase tracking-wider mb-2">Your Choice</div>
+                <p className="text-offwhite text-lg">
+                  You&apos;ve chosen to build:{' '}
+                  <strong className="text-brass-light font-serif text-xl">{selectedBuilds}</strong>
+                </p>
+                <p className="text-offwhite/70 text-sm mt-2">Your gift will go directly to completing this element.</p>
+              </div>
+            </CardSurface>
+          )}
+
           <CardSurface variant="slate" padding="lg" className="mb-8">
-            <h3 className="text-brass text-2xl font-serif font-bold mb-8 text-center">
-              {content.donationHeading}
-            </h3>
+            <h3 className="text-brass text-2xl font-serif font-bold mb-8 text-center">{content.donationHeading}</h3>
 
             <div className="bg-navy-dark/50 rounded-lg p-6 mb-6 border-2 border-brass/20">
-              <h4 className="text-brass-light text-lg font-serif font-bold mb-4">
-                {content.primaryOrg.name}
-              </h4>
+              <h4 className="text-brass-light text-lg font-serif font-bold mb-4">{content.primaryOrg.name}</h4>
               <div className="space-y-2 text-offwhite">
                 <p className="text-sm">
                   <span className="font-bold">EIN:</span> {content.primaryOrg.ein}
@@ -67,14 +94,17 @@ export function CallToAction({ data, mode }: CallToActionProps) {
                   <p className="text-sm">{content.primaryOrg.mailingAddress.attention}</p>
                   <p className="text-sm">{content.primaryOrg.mailingAddress.address}</p>
                   <p className="text-sm">{content.primaryOrg.mailingAddress.city}</p>
+                  {selectedBuilds && (
+                    <p className="text-brass text-sm mt-2 italic">
+                      ✓ Please note in memo: &quot;{selectedBuilds}&quot;
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="bg-navy-dark/50 rounded-lg p-6 border-2 border-brass/20">
-              <h4 className="text-brass-light text-lg font-serif font-bold mb-4">
-                {content.alternateOrg.name}
-              </h4>
+              <h4 className="text-brass-light text-lg font-serif font-bold mb-4">{content.alternateOrg.name}</h4>
               <div className="space-y-2 text-offwhite">
                 <p className="text-sm">
                   <span className="font-bold">EIN:</span> {content.alternateOrg.ein}

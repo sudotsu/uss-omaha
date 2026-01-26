@@ -38,9 +38,10 @@ export function Agenda({ data, isPrint = false }: AgendaProps) {
 
                   {/* Item Text */}
                   <div className="flex-1">
-                    <p className="text-2xl md:text-3xl font-serif text-offwhite leading-relaxed group-hover:text-brass/90 transition-colors duration-200">
-                      {item}
-                    </p>
+                    <div className="text-offwhite leading-relaxed group-hover:text-brass/90 transition-colors duration-200">
+                      <span className="block text-2xl md:text-3xl font-serif mb-2">{item.title}</span>
+                      <span className="block text-lg opacity-80">{item.description}</span>
+                    </div>
                   </div>
                 </div>
 

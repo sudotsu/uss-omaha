@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
-import type { Gallery as GalleryType } from '@/types/content'
+import { CardSurface } from '@/components/ui/CardSurface'
 import { Container } from '@/components/ui/Container'
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback'
-import { CardSurface } from '@/components/ui/CardSurface'
 import { Lightbox } from '@/components/ui/Lightbox'
+import type { Gallery as GalleryType } from '@/types/content'
+import { useState } from 'react'
 
 interface GalleryProps {
   data: GalleryType
@@ -27,6 +27,11 @@ export function Gallery({ data }: GalleryProps) {
   const handlePrev = () => {
     setCurrentImageIndex((prev) => (prev - 1 + data.images.length) % data.images.length)
   }
+
+  const lightboxImages = data.images.map((image) => ({
+    src: image.src,
+    caption: image.caption,
+  }))
 
   return (
     <section id="gallery" className="section-light section-spacing">
@@ -83,7 +88,7 @@ export function Gallery({ data }: GalleryProps) {
 
       {lightboxOpen && (
         <Lightbox
-          images={data.images}
+          images={lightboxImages}
           currentIndex={currentImageIndex}
           onClose={() => setLightboxOpen(false)}
           onNext={handleNext}

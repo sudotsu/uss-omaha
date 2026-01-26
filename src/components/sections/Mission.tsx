@@ -33,8 +33,21 @@ export function Mission({ data, isPrint = false }: MissionProps) {
             )}
 
             <p className="text-xl md:text-2xl text-slate-deep leading-relaxed text-center relative z-10">
-              {data.body}
+              {data.statement}
             </p>
+
+            {data.highlights && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                {data.highlights.map((highlight, index) => (
+                  <div key={index} className="flex flex-col items-center">
+                    <div className="w-2 h-2 bg-brass rotate-45 mb-4"></div>
+                    <span className="text-lg font-medium tracking-wide uppercase text-brass">
+                      {highlight}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {!isPrint && (
               <div className="absolute -right-4 -bottom-4 text-8xl text-brass/20 font-serif leading-none">
