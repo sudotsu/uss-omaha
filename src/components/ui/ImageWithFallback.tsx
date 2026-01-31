@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface ImageWithFallbackProps {
   src: string
@@ -30,8 +30,19 @@ export function ImageWithFallback({
   unoptimized = false,
   onLoad,
 }: ImageWithFallbackProps) {
-  const [imgSrc, setImgSrc] = useState(src)
+  const [imgSrc, setImgSrc] = useState<string>(src || '/images/placeholder.svg')
   const [hasError, setHasError] = useState(false)
+
+  // Sync state if prop changes
+  useEffect(() => {
+    if (!src) {
+      setImgSrc('/images/placeholder.svg')
+      setHasError(true)
+    } else {
+      setImgSrc(src)
+      setHasError(false)
+    }
+  }, [src])
 
   const handleError = () => {
     if (!hasError) {
@@ -52,32 +63,13 @@ export function ImageWithFallback({
   }
 
   if (fill) {
-    return (
-      <Image
-        {...commonProps}
-        src={imgSrc}
-        fill
-      />
-    )
+    return <Image {...commonProps} src={imgSrc} fill />
   }
 
   if (width && height) {
-    return (
-      <Image
-        {...commonProps}
-        src={imgSrc}
-        width={width}
-        height={height}
-      />
-    )
+    return <Image {...commonProps} src={imgSrc} width={width} height={height} />
   }
 
   // Fallback to fill if neither width/height provided
-  return (
-    <Image
-      {...commonProps}
-      src={imgSrc}
-      fill
-    />
-  )
+  return <Image {...commonProps} src={imgSrc} fill />
 }

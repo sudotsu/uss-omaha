@@ -32,10 +32,9 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
+      {/* Background Image (No Overlay) */}
       <div className="absolute inset-0 z-0">
         <ImageWithFallback src={data.backgroundImage} alt="USS Omaha Submarine" fill priority quality={90} className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/90 via-navy/85 to-navy/90"></div>
       </div>
 
       {/* Content */}
@@ -44,12 +43,12 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
           {/* Navy 250 Logo */}
           <div className="flex justify-center mb-12">
             <div className="relative w-40 h-40 lg:w-48 lg:h-48">
-              <Image src="/images/logos/navy-250.svg" alt="Navy 250th Anniversary" fill className="object-contain drop-shadow-2xl" />
+              <Image src="/images/logos/uss-omaha-patch.jpg" alt="USS Omaha SSN-692 Patch" fill className="object-contain drop-shadow-2xl" />
             </div>
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-brass uppercase tracking-wide drop-shadow-lg">{data.heading}</h1>
+          <h1 className="text-navy uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-white/80 p-4 rounded-xl backdrop-blur-sm inline-block mx-auto border-2 border-navy/10">{data.heading}</h1>
 
           {/* Decorative Divider */}
           <div className="flex items-center justify-center space-x-4">
@@ -59,11 +58,11 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
           </div>
 
           {/* Subheading */}
-          <p className="text-4xl md:text-5xl lg:text-6xl text-offwhite font-serif font-light">{data.subheading}</p>
+          <p className="text-4xl md:text-5xl lg:text-6xl text-offwhite font-serif font-light drop-shadow-md">{data.subheading}</p>
 
           {/* Countdown Timer */}
           {navy250.deadline && (
-            <div className="mt-16 bg-navy-dark/50 rounded-lg p-8 border-2 border-brass/20 max-w-4xl mx-auto">
+            <div className="mt-16 bg-navy-dark/80 rounded-lg p-8 border-2 border-brass/20 max-w-4xl mx-auto backdrop-blur-md shadow-2xl">
               <div className="text-brass text-sm font-serif uppercase tracking-widest mb-4">
                 {navy250.deadlineLabel || 'Navy 250th Anniversary Goal'}
               </div>
@@ -76,8 +75,8 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
 
           {/* Scroll Indicator */}
           <div className="pt-16 animate-bounce">
-            <svg className="w-8 h-8 mx-auto text-brass opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <svg className="w-10 h-10 mx-auto text-brass opacity-90 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
           </div>
         </div>
