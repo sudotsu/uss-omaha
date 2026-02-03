@@ -1,15 +1,15 @@
-import React from 'react'
-import type { Volunteer as VolunteerType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { Volunteer as VolunteerType } from '@/types/content'
 
 interface VolunteerProps {
   data: VolunteerType
+  isPrint?: boolean
 }
 
-export function Volunteer({ data }: VolunteerProps) {
+export function Volunteer({ data, isPrint = false }: VolunteerProps) {
   return (
-    <section id="volunteer" className="section-light section-spacing">
+    <section id="volunteer" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}

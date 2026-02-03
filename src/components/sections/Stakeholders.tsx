@@ -1,15 +1,15 @@
-import React from 'react'
-import type { Stakeholders as StakeholdersType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { Stakeholders as StakeholdersType } from '@/types/content'
 
 interface StakeholdersProps {
   data: StakeholdersType
+  isPrint?: boolean
 }
 
-export function Stakeholders({ data }: StakeholdersProps) {
+export function Stakeholders({ data, isPrint = false }: StakeholdersProps) {
   return (
-    <section id="stakeholders" className="section-navy section-spacing">
+    <section id="stakeholders" className={`section-navy ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">

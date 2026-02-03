@@ -6,11 +6,12 @@ import type { WhyNow as WhyNowType } from '@/types/content'
 
 interface WhyNowProps {
   data: WhyNowType
+  isPrint?: boolean
 }
 
-export function WhyNow({ data }: WhyNowProps) {
+export function WhyNow({ data, isPrint = false }: WhyNowProps) {
   return (
-    <section id="why-now" className="section-light section-spacing">
+    <section id="why-now" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">

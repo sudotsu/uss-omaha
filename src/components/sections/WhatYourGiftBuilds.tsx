@@ -8,6 +8,7 @@ import { useState } from 'react'
 
 interface WhatYourGiftBuildsProps {
   phases: PhasesType
+  isPrint?: boolean
 }
 
 function extractPhase4Parts(phases: PhasesType): Array<{ name: string; description: string }> {
@@ -32,14 +33,14 @@ function extractPhase4Parts(phases: PhasesType): Array<{ name: string; descripti
   return parts
 }
 
-export function WhatYourGiftBuilds({ phases }: WhatYourGiftBuildsProps) {
+export function WhatYourGiftBuilds({ phases, isPrint = false }: WhatYourGiftBuildsProps) {
   const [selectedPart, setSelectedPart] = useState<string | null>(null)
   const parts = extractPhase4Parts(phases)
 
   if (parts.length === 0) return null
 
   return (
-    <section id="what-your-gift-builds" className="section-slate section-spacing">
+    <section id="what-your-gift-builds" className={`section-slate ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
@@ -65,7 +66,7 @@ export function WhatYourGiftBuilds({ phases }: WhatYourGiftBuildsProps) {
                   variant="navy"
                   padding="lg"
                   interactive
-                  onClick={() => setSelectedPart(isSelected ? null : part.name)}
+                  onClick={() => !isPrint && setSelectedPart(isSelected ? null : part.name)}
                   className={`h-full flex flex-col transition-all duration-300 ${
                     isSelected ? 'ring-4 ring-brass shadow-2xl scale-105' : ''
                   }`}
@@ -100,6 +101,7 @@ export function WhatYourGiftBuilds({ phases }: WhatYourGiftBuildsProps) {
                   </div>
 
                   {/* CTA Button */}
+                  {!isPrint && (
                   <div className="mt-6">
                     <Button
                       href={`#call-to-action?builds=${encodeURIComponent(part.name)}`}
@@ -109,6 +111,7 @@ export function WhatYourGiftBuilds({ phases }: WhatYourGiftBuildsProps) {
                       {isSelected ? 'Donate to Build This →' : 'Select This Part'}
                     </Button>
                   </div>
+                  )}
                 </CardSurface>
               )
             })}

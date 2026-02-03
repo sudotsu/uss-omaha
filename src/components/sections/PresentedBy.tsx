@@ -1,14 +1,14 @@
-import React from 'react'
-import type { PresentedBy as PresentedByType } from '@/types/content'
 import { Container } from '@/components/ui/Container'
+import type { PresentedBy as PresentedByType } from '@/types/content'
 
 interface PresentedByProps {
   data: PresentedByType
+  isPrint?: boolean
 }
 
-export function PresentedBy({ data }: PresentedByProps) {
+export function PresentedBy({ data, isPrint = false }: PresentedByProps) {
   return (
-    <section id="presented-by" className="section-slate py-12">
+    <section id="presented-by" className={`section-slate ${isPrint ? 'py-4' : 'py-12'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           <h3 className="text-brass text-center text-xl font-serif mb-8">{data.heading}</h3>

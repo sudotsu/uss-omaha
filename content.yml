@@ -4,12 +4,12 @@
 metadata:
   title: "USS Omaha SSN-692 Memorial"
   subtitle: "Honoring Service, Preserving Legacy"
-  year: "2025"
+  year: "2026"
   mode: "memorial"
 
 hero:
   heading: "250 Years of Defending Freedom, Protecting Prosperity"
-  subheading: "USS Omaha SSN-692 Memorial 2025"
+  subheading: "USS Omaha SSN-692 Memorial 2026"
   backgroundImage: "/images/hero-sub.png"
 
 mission:
@@ -177,9 +177,7 @@ executionPhotos:
     - src: "/images/phase1-construction-1.png"
       caption: "Construction of the concrete pads for the sail and rudder"
       year: "2015"
-    - src: "/images/phase1-construction-1.png"
-      caption: "Concrete pad for the sail being constructed"
-      year: "2015"
+
     - src: "/images/phase1-complete.png"
       caption: "View south from the finished Sail Pad to the finished Rudder Pad"
       year: "2015"
@@ -206,7 +204,7 @@ whyNow:
   memorial:
     name: "USS OMAHA SSN 692 MEMORIAL"
     cost: "$2 MILLION"
-  tagline: "USS OMAHA SSN 692 RELAUNCH 2025"
+  tagline: "USS OMAHA SSN 692 RELAUNCH 2026"
 
 callToAction:
   memorial:
@@ -311,7 +309,7 @@ footer:
     - label: "Home"
       href: "/"
     - label: "Donate"
-      href: "/donate"
+      href: "https://ussomahamemorial.org/donate"
   logos:
     - src: "/images/logos/omaha-parks.png"
       alt: "Omaha Parks Foundation"

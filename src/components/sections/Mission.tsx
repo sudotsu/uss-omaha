@@ -9,6 +9,7 @@ interface MissionProps {
 export function Mission({ data, isPrint = false }: MissionProps) {
   return (
     <section
+      id="mission"
       className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'} page-break-avoid`}
     >
       <Container>

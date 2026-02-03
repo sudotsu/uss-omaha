@@ -5,11 +5,12 @@ import type { SitePlan as SitePlanType } from '@/types/content'
 
 interface SitePlanProps {
   data: SitePlanType
+  isPrint?: boolean
 }
 
-export function SitePlan({ data }: SitePlanProps) {
+export function SitePlan({ data, isPrint = false }: SitePlanProps) {
   return (
-    <section id="site-plan" className="section-slate section-spacing">
+    <section id="site-plan" className={`section-slate ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}

@@ -3,13 +3,14 @@ import type { FundraisingProgress as ProgressType } from '@/types/content'
 
 interface FundraisingProgressProps {
   data: ProgressType
+  isPrint?: boolean
 }
 
-export function FundraisingProgress({ data }: FundraisingProgressProps) {
+export function FundraisingProgress({ data, isPrint = false }: FundraisingProgressProps) {
   const progressPercent = Math.round((data.raised / data.goal) * 100)
 
   return (
-    <section className="bg-brass/10 py-12 border-y-2 border-brass/20">
+    <section className={`${isPrint ? 'border-y-2 border-brass/20 py-6' : 'bg-brass/10 py-12'} border-y-2 border-brass/20`}>
       <Container>
         <div className="max-w-4xl mx-auto text-center">
           {/* Amount Raised */}

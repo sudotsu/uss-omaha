@@ -4,9 +4,10 @@ import type { Footer as FooterType } from '@/types/content'
 
 interface FooterProps {
   data: FooterType
+  isPrint?: boolean
 }
 
-export function Footer({ data }: FooterProps) {
+export function Footer({ data, isPrint = false }: FooterProps) {
   const currentYear = new Date().getFullYear()
 
   return (

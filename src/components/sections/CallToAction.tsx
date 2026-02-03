@@ -9,9 +9,10 @@ import { useEffect, useState } from 'react'
 interface CallToActionProps {
   data: CallToActionSection
   mode: Metadata['mode']
+  isPrint?: boolean
 }
 
-export function CallToAction({ data, mode }: CallToActionProps) {
+export function CallToAction({ data, mode, isPrint = false }: CallToActionProps) {
   const [selectedBuilds, setSelectedBuilds] = useState<string | null>(null)
   const content = mode === 'donor' ? data.donor : data.memorial
 
@@ -30,7 +31,7 @@ export function CallToAction({ data, mode }: CallToActionProps) {
   }, [])
 
   return (
-    <section id="call-to-action" className="section-slate section-spacing">
+    <section id="call-to-action" className={`section-slate ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">

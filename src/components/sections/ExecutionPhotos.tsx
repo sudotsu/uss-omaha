@@ -9,9 +9,10 @@ import { useState } from 'react'
 
 interface ExecutionPhotosProps {
   data: ExecutionPhotosType
+  isPrint?: boolean
 }
 
-export function ExecutionPhotos({ data }: ExecutionPhotosProps) {
+export function ExecutionPhotos({ data, isPrint = false }: ExecutionPhotosProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const lightboxImages = data.photos.map((photo) => ({
@@ -32,7 +33,7 @@ export function ExecutionPhotos({ data }: ExecutionPhotosProps) {
   }
 
   return (
-    <section id="execution-photos" className="section-light section-spacing">
+    <section id="execution-photos" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
@@ -52,7 +53,7 @@ export function ExecutionPhotos({ data }: ExecutionPhotosProps) {
                 variant="light"
                 padding="sm"
                 interactive
-                onClick={() => setSelectedIndex(index)}
+                onClick={() => !isPrint && setSelectedIndex(index)}
                 className="group h-full"
               >
                 <div className="relative aspect-[4/3] bg-navy/5 overflow-hidden rounded-t-sm">

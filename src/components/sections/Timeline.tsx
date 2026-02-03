@@ -4,11 +4,12 @@ import type { Timeline as TimelineType } from '@/types/content'
 
 interface TimelineProps {
   data: TimelineType
+  isPrint?: boolean
 }
 
-export function Timeline({ data }: TimelineProps) {
+export function Timeline({ data, isPrint = false }: TimelineProps) {
   return (
-    <section id="timeline" className="section-navy section-spacing">
+    <section id="timeline" className={`section-navy ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}

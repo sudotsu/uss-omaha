@@ -4,11 +4,12 @@ import type { Budget as BudgetType } from '@/types/content'
 
 interface BudgetProps {
   data: BudgetType
+  isPrint?: boolean
 }
 
-export function Budget({ data }: BudgetProps) {
+export function Budget({ data, isPrint = false }: BudgetProps) {
   return (
-    <section id="budget" className="section-slate section-spacing">
+    <section id="budget" className={`section-slate ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">

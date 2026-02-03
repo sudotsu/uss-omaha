@@ -33,7 +33,7 @@ export default function HomePage() {
           { id: 'mission', label: 'Mission' },
           { id: 'phases', label: 'Phases' },
           { id: 'gallery', label: 'Gallery' },
-          { id: 'call-to-action', label: 'Donate', highlight: true }
+          { id: 'donate', label: 'Donate', href: 'https://ussomahamemorial.org/donate', highlight: true }
         ]}
         pledgeFormUrl={content.callToAction.memorial.pledgeFormUrl}
       />

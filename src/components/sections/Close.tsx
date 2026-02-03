@@ -5,11 +5,12 @@ import type { Close as CloseType } from '@/types/content'
 
 interface CloseProps {
   data: CloseType
+  isPrint?: boolean
 }
 
-export function Close({ data }: CloseProps) {
+export function Close({ data, isPrint = false }: CloseProps) {
   return (
-    <section id="close" className="section-light section-spacing">
+    <section id="close" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">

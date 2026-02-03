@@ -7,6 +7,7 @@ interface NavSection {
   id: string
   label: string
   highlight?: boolean
+  href?: string
 }
 
 interface StickyNavProps {
@@ -60,8 +61,8 @@ export function StickyNav({ sections, pledgeFormUrl }: StickyNavProps) {
                 {sections.map((section) => (
                   <a
                     key={section.id}
-                    href={`#${section.id}`}
-                    onClick={(e) => scrollToSection(e, section.id)}
+                    href={section.href || `#${section.id}`}
+                    onClick={(e) => !section.href && scrollToSection(e, section.id)}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       section.highlight
                         ? 'bg-brass text-navy hover:bg-brass-light'

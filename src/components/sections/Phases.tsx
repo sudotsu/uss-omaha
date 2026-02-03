@@ -1,15 +1,15 @@
-import React from 'react'
-import type { Phases as PhasesType } from '@/types/content'
-import { Container } from '@/components/ui/Container'
 import { CardSurface } from '@/components/ui/CardSurface'
+import { Container } from '@/components/ui/Container'
+import type { Phases as PhasesType } from '@/types/content'
 
 interface PhasesProps {
   data: PhasesType
+  isPrint?: boolean
 }
 
-export function Phases({ data }: PhasesProps) {
+export function Phases({ data, isPrint = false }: PhasesProps) {
   return (
-    <section id="phases" className="section-light section-spacing">
+    <section id="phases" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}

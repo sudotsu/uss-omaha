@@ -5,11 +5,12 @@ import type { LocationShift as LocationShiftType } from '@/types/content'
 
 interface LocationShiftProps {
   data: LocationShiftType
+  isPrint?: boolean
 }
 
-export function LocationShift({ data }: LocationShiftProps) {
+export function LocationShift({ data, isPrint = false }: LocationShiftProps) {
   return (
-    <section id="site-shift" className="section-light section-spacing">
+    <section id="site-shift" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}

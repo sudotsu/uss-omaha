@@ -9,9 +9,10 @@ import { useState } from 'react'
 
 interface GalleryProps {
   data: GalleryType
+  isPrint?: boolean
 }
 
-export function Gallery({ data }: GalleryProps) {
+export function Gallery({ data, isPrint = false }: GalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
@@ -34,7 +35,7 @@ export function Gallery({ data }: GalleryProps) {
   }))
 
   return (
-    <section id="gallery" className="section-light section-spacing">
+    <section id="gallery" className={`section-light ${isPrint ? 'section-spacing-tight' : 'section-spacing'}`}>
       <Container>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">

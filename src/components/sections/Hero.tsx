@@ -48,7 +48,7 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-navy uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-white/80 p-4 rounded-xl backdrop-blur-sm inline-block mx-auto border-2 border-navy/10">{data.heading}</h1>
+          <h1 className="text-brass uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-navy-dark/80 p-6 rounded-lg backdrop-blur-md inline-block mx-auto border-2 border-brass/20 shadow-2xl">{data.heading}</h1>
 
           {/* Decorative Divider */}
           <div className="flex items-center justify-center space-x-4">
