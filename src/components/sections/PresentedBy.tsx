@@ -12,7 +12,7 @@ export function PresentedBy({ data, isPrint = false }: PresentedByProps) {
       <Container>
         <div className="max-w-4xl mx-auto">
           <h3 className="text-brass text-center text-xl font-serif mb-8">{data.heading}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex justify-center">
             {data.presenters.map((presenter, index) => (
               <div key={index} className="text-center">
                 <p className="text-brass-light font-serif font-bold text-lg mb-1">{presenter.name}</p>
