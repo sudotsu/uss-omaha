@@ -35,7 +35,7 @@ export default function HomePage() {
           { id: 'gallery', label: 'Gallery' },
           { id: 'donate', label: 'Donate', href: 'https://ussomahamemorial.org/donate', highlight: true }
         ]}
-        pledgeFormUrl={content.callToAction.memorial.pledgeFormUrl}
+        mainSiteUrl="https://ussomahamemorial.org/home"
       />
 
       <Hero data={content.hero} navy250={content.navy250} />

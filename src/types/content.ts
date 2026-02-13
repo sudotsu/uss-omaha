@@ -223,15 +223,15 @@ export interface MailingAddress {
 export interface Volunteer {
   heading: string
   subheading: string
-  contact: Contact
-  opportunities: string[]
-  organization: string
-  organizationContact: string
+  contact?: Contact
+  opportunities?: string[]
+  organization?: string
+  organizationContact?: string
 }
 
 export interface Contact {
-  name: string
-  phone: string
+  name?: string
+  phone?: string
   email: string
 }
 
@@ -291,6 +291,7 @@ export interface QuickLink {
 export interface Logo {
   src: string
   alt: string
+  href?: string
 }
 
 export interface Navy250 {

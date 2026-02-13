@@ -10,7 +10,7 @@ metadata:
 hero:
   heading: "250 Years of Defending Freedom, Protecting Prosperity"
   subheading: "USS Omaha SSN-692 Memorial 2026"
-  backgroundImage: "/images/hero-sub.png"
+  backgroundImage: "/images/hero-final.webp"
 
 mission:
   heading: "Our Mission"
@@ -227,7 +227,7 @@ callToAction:
       note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
     taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
     pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/forms/Pledge_Form_Blank_Final.pdf"
+    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
   donor:
     heading: "USS Omaha Call to Action"
     tagline: "Honor the Past. Build the Future."
@@ -248,19 +248,14 @@ callToAction:
       note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
     taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
     pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/forms/Pledge_Form_Blank_Final.pdf"
+    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
 
 volunteer:
   heading: "USS Omaha Call to Action"
   subheading: "Community Engagement or Volunteer Opportunities"
   contact:
-    name: "Joe Higgins"
-    phone: "(402) 515-5563"
-    email: "LeviCarterNeighborhood@gmail.com"
-  opportunities:
-    - "Levi Carter Lake Shoreline Cleanup"
-  organization: "Levi Carter Sherman Neighborhood Association"
-  organizationContact: "Joe Higgins, Call/Text (402) 515-5563"
+    name: "General Info"
+    email: "info@ussomahamemorial.org"
 
 stakeholders:
   heading: "USS Omaha Action Committee"
@@ -274,9 +269,6 @@ stakeholders:
       title: "Community Member, USN Vet"
     - name: "Lauren Marie Foster"
       title: "Omaha Parks & Recreation Board Chair"
-    - name: "Joe Higgins"
-      title: "Levi Carter Sherman Neighborhood Assn"
-      subtitle: "OIPA CAC USN Vet"
 
 close:
   heading: "Questions?"
@@ -285,7 +277,7 @@ close:
     organization: "USSVI MARLIN BASE"
     website: "www.marlinbase.org"
     contact: "Mark Thompson"
-  finalImage: "/images/hero-sub.png"
+  finalImage: "/images/hero-final.webp"
 
 presentedBy:
   heading: "Presented By:"
@@ -293,9 +285,6 @@ presentedBy:
     - name: "Mark Thompson, USN LCDR Ret"
       org: "US Submarine Veterans, Inc. USSVI"
       title: "Marlin Base CDR"
-    - name: "Joe Higgins, President (USN Vet)"
-      org: "Levi Carter Sherman Neighborhood Assn."
-      title: "CAC- Omaha Inland Port Authority"
 
 footer:
   address:
@@ -303,28 +292,38 @@ footer:
     - "Groton, CT 06340"
   contact:
     name: "General Info"
-    email: "info@ussomaha.org"
+    email: "info@ussomahamemorial.org"
     phone: "(555) 123-4567"
   quickLinks:
     - label: "Home"
       href: "/"
+    - label: "Mission"
+      href: "#mission"
+    - label: "Phases"
+      href: "#phases"
+    - label: "Gallery"
+      href: "#gallery"
     - label: "Donate"
       href: "https://ussomahamemorial.org/donate"
   logos:
     - src: "/images/logos/omaha-parks.png"
       alt: "Omaha Parks Foundation"
+      href: "https://omahaparksfoundation.org/"
     - src: "/images/logos/ussvi-marlin.jpg"
       alt: "USSVI Marlin Base"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "City of Omaha"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "Omaha Parks Recreation Public Property"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
-    - src: "/images/logos/levi-carter-seal.png"
-      alt: "Levi Carter Sherman Neighborhood Association"
+      href: "http://www.marlinbase.org/"
+    - src: "/images/logos/ussvcf.webp"
+      alt: "U.S. Submarine Veterans Charitable Foundation"
+      href: "https://ussvcf.org/"
     - src: "/images/logos/usnl-seal.jpg"
       alt: "US Navy League"
+      href: "https://www.navyleague.org/"
+    - src: "/images/logos/big-red-sub-club.png"
+      alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
+      href: "https://bigredsubclub.com/"
+    - src: "/images/logos/national-garden-club.png"
+      alt: "National Garden Club, Inc"
+      href: "https://gardenclub.org/"
 
 navy250:
   logo: "/images/logos/navy-250-authentic.png"
