@@ -42,13 +42,6 @@ export function Close({ data, isPrint = false }: CloseProps) {
 
 
 
-          <div className="relative aspect-[16/9] bg-navy/5 rounded-lg overflow-hidden shadow-xl border-2 border-brass/20">
-            <ImageWithFallback src={data.finalImage} alt="USS Omaha SSN-692" fill className="object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent"></div>
-            <div className="absolute bottom-8 inset-x-0 text-center">
-              <p className="text-brass text-2xl font-serif font-bold">USS Omaha SSN-692 Memorial</p>
-            </div>
-          </div>
         </div>
       </Container>
     </section>

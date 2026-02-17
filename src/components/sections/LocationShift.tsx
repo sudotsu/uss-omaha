@@ -46,11 +46,17 @@ export function LocationShift({ data, isPrint = false }: LocationShiftProps) {
           </div>
 
           {/* New Location */}
-          <CardSurface variant="light" padding="lg" className="mb-12">
-            <h3 className="text-navy text-2xl font-serif font-bold mb-4 text-center">{data.newLocationHeading}</h3>
-            <div className="h-px bg-brass/30 mb-6 max-w-md mx-auto"></div>
-            <p className="text-slate-deep text-lg leading-relaxed text-center max-w-2xl mx-auto">{data.newLocationBody}</p>
-          </CardSurface>
+          <div className="mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-navy mb-4">{data.newLocationHeading}</h2>
+              <div className="flex items-center justify-center space-x-3 mb-6">
+                <div className="h-px w-12 bg-brass"></div>
+                <div className="w-1.5 h-1.5 bg-brass rotate-45"></div>
+                <div className="h-px w-12 bg-brass"></div>
+              </div>
+              <p className="text-xl text-slate-deep leading-relaxed max-w-3xl mx-auto">{data.newLocationBody}</p>
+            </div>
+          </div>
 
           {/* Levi Carter Park Map */}
           <div>
@@ -64,6 +70,9 @@ export function LocationShift({ data, isPrint = false }: LocationShiftProps) {
                 />
               </div>
             </CardSurface>
+            {data.mapCaption && (
+              <p className="text-center text-slate-deep italic mt-4">{data.mapCaption}</p>
+            )}
           </div>
 
           {/* Bottom Accent */}

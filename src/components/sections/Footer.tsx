@@ -17,11 +17,11 @@ export function Footer({ data, isPrint = false }: FooterProps) {
           {/* Logo & Address */}
           <div className="md:col-span-1">
             <h3 className="text-brass font-serif font-bold text-lg mb-4">USS Omaha Memorial</h3>
-            <div className="space-y-1 text-sm text-offwhite/80">
+            <ul className="space-y-2 text-sm text-offwhite/80">
               {data.address.map((line, i) => (
-                <p key={i}>{line}</p>
+                <li key={i}>{line}</li>
               ))}
-            </div>
+            </ul>
           </div>
 
           {/* Contact */}

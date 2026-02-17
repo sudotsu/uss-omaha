@@ -135,11 +135,12 @@ budget:
 locationShift:
   heading: "Freedom Park"
   subtitle: "The initial thought was to locate the USS Omaha at Freedom Park. That changed after the Summer 2011 Missouri River Flood."
-  floodImage: "/images/freedom-park-flood.png"
+  floodImage: "/images/gallery/Freedom Park Flood Photo-July 2011.webp"
   floodCaption: "Freedom Park during the 2011 Missouri River Flood"
   newLocationHeading: "Levi Carter Park Site"
   newLocationBody: "Instead of relocating Freedom Park, it was decided to find a location just for the USS Omaha & the USS Nebraska. (Future Plan) Levi Carter Park, located along Abbott Drive, was chosen as the site."
   mapImage: "/images/location/levi-carter-map-authentic.jpg"
+  mapCaption: "Levi Carter Park Location Map"
 
 sitePlan:
   heading: "USS Omaha SSN 692 - The Site Plan"
@@ -150,14 +151,16 @@ sitePlan:
 gallery:
   heading: "USS Omaha SSN 692"
   images:
-    - src: "/images/gallery/a10-sub.jpg"
-      caption: "A-10 Warthog flying over USS Omaha"
     - src: "/images/gallery/watercolor-aerial.jpg"
       caption: "Watercolor Concept: Aerial view of the memorial park"
     - src: "/images/gallery/watercolor-ceremony.jpg"
       caption: "Watercolor Concept: Dedication Ceremony view"
     - src: "/images/gallery/memorial-watercolor.jpg"
       caption: "Watercolor Concept: Memorial perspective"
+    - src: "/images/gallery/P6173228.webp"
+      caption: "Site Preparation: Early groundwork at the Levi Carter Park location"
+    - src: "/images/gallery/P6173233.webp"
+      caption: "Construction Progress: Foundation work for the memorial site"
 
 executionPhotos:
   heading: "USS Omaha SSN 692 Phase 1 Execution"
@@ -277,7 +280,6 @@ close:
     organization: "USSVI MARLIN BASE"
     website: "www.marlinbase.org"
     contact: "Mark Thompson"
-  finalImage: "/images/hero-final.webp"
 
 presentedBy:
   heading: "Presented By:"
@@ -288,12 +290,14 @@ presentedBy:
 
 footer:
   address:
-    - "PO Box 1063"
-    - "Groton, CT 06340"
+    - "Bellevue University"
+    - "Military Veteran Services Center MVSC ESB 4476"
+    - "John B. Muller Administrative Services Building"
+    - "812 Bruin Blvd, Bellevue, NE 68005"
   contact:
     name: "General Info"
     email: "info@ussomahamemorial.org"
-    phone: "(555) 123-4567"
+    phone: "(402) 557-7820"
   quickLinks:
     - label: "Home"
       href: "/"

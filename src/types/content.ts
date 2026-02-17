@@ -135,6 +135,7 @@ export interface LocationShift {
   newLocationHeading: string
   newLocationBody: string
   mapImage: string
+  mapCaption?: string
 }
 
 export interface SitePlan {
@@ -250,7 +251,6 @@ export interface Close {
   heading: string
   subheading: string
   contactInfo: ContactInfo
-  finalImage: string
 }
 
 export interface ContactInfo {

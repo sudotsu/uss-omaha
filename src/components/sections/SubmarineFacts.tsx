@@ -25,7 +25,7 @@ export function SubmarineFacts({ data, isPrint = false }: SubmarineFactsProps) {
           </div>
 
           {/* Content Layout */}
-          <div className={`${isPrint ? 'space-y-8' : 'grid grid-cols-1 lg:grid-cols-2 gap-12 items-center'}`}>
+          <div className="max-w-3xl mx-auto">
             {/* Facts Table */}
             <div className="page-break-avoid">
               <div className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-brass/10">
@@ -44,26 +44,6 @@ export function SubmarineFacts({ data, isPrint = false }: SubmarineFactsProps) {
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Submarine Image */}
-            <div className="page-break-avoid">
-              <div className="relative aspect-[4/3] bg-navy/5 rounded-lg overflow-hidden shadow-xl border-2 border-brass/20">
-                <ImageWithFallback
-                  src={data.image}
-                  alt="USS Omaha SSN-692"
-                  fill
-                  className="object-cover"
-                />
-                {/* Image Caption Overlay */}
-                {!isPrint && (
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-navy/90 to-transparent p-4">
-                    <p className="text-offwhite text-sm font-serif text-center">
-                      {data.heading}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
