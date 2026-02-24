@@ -32,15 +32,19 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
 
   return (
     <section className="relative min-h-[85vh] flex items-start justify-center overflow-hidden pt-16 pb-16">
-      {/* Background Image (No Overlay) */}
-      <div className="absolute top-0 left-0 w-full h-[120%] z-0">
-        <ImageWithFallback src={data.backgroundImage} alt="USS Omaha Submarine" fill priority quality={90} className="object-cover object-[center_87%]" />
+      {/* Background Image with Ken Burns Effect */}
+      <div className="absolute top-0 left-0 w-full h-[120%] z-0 animate-ken-burns">
+        {/* We use homepage_right.jpg directly as requested */}
+        <ImageWithFallback src="/images/homepage_right.jpg" alt="USS Omaha Submarine" fill priority quality={90} className="object-cover object-[center_87%]" />
+
+        {/* Subtle Dark Gradient Overlay for Text Contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-navy/80 z-10" />
       </div>
 
       {/* Content */}
-      <div className="text-center animate-fade-in relative z-10 w-full max-w-4xl mx-auto">
+      <div className="text-center animate-fade-up relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24">
         {/* Main Heading */}
-        <h1 className="text-brass uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-navy-dark/80 p-6 rounded-lg backdrop-blur-md inline-block mx-auto border-2 border-brass/20 shadow-2xl mb-8 leading-tight">{data.heading}</h1>
+        <h1 className="text-brass uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-navy-dark/60 p-6 rounded-lg backdrop-blur-sm inline-block mx-auto border border-brass/20 shadow-2xl mb-8 leading-tight">{data.heading}</h1>
 
         {/* Decorative Divider */}
         <div className="flex items-center justify-center space-x-4 mb-6">
