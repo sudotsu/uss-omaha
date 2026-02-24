@@ -34,8 +34,8 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
     <section className="relative min-h-[85vh] flex items-start justify-center overflow-hidden pt-16 pb-16">
       {/* Background Image with Ken Burns Effect */}
       <div className="absolute top-0 left-0 w-full h-[120%] z-0 animate-ken-burns">
-        {/* We use homepage_right.jpg directly as requested */}
-        <ImageWithFallback src="/images/homepage_right.jpg" alt="USS Omaha Submarine" fill priority quality={90} className="object-cover object-[center_87%]" />
+        {/* We use homepage_right_cropped.jpg directly as requested */}
+        <ImageWithFallback src="/images/homepage_right_cropped.jpg" alt="USS Omaha Submarine" fill priority quality={90} className="object-cover object-center" />
 
         {/* Subtle Dark Gradient Overlay for Text Contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-navy/80 z-10" />
