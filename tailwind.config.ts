@@ -25,20 +25,7 @@ const config: Config = {
           light: '#CBD5E1',
         },
       },
-      keyframes: {
-        fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(1rem)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        kenBurns: {
-          '0%': { transform: 'scale(1)' },
-          '100%': { transform: 'scale(1.05)' },
-        }
-      },
-      animation: {
-        'fade-up': 'fadeInUp 1s ease-out forwards',
-        'ken-burns': 'kenBurns 20s ease-out forwards',
-      },
+
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-merriweather)', 'Georgia', 'serif'],

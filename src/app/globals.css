@@ -141,6 +141,24 @@
       transform: translateY(0);
     }
   }
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(1rem); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes kenBurns {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+  }
+
+  .animate-fade-up {
+    animation: fadeInUp 1s ease-out forwards;
+  }
+
+  .animate-ken-burns {
+    animation: kenBurns 20s ease-out forwards;
+  }
 }
 
 /* Print Styles */
