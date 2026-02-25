@@ -1,10 +1,8 @@
-'use client'
-
 import { Container } from '@/components/ui/Container'
 import { CountdownTimer } from '@/components/ui/CountdownTimer'
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback'
 import type { Hero as HeroType, Navy250 } from '@/types/content'
 import Image from 'next/image'
-import { useState } from 'react'
 
 interface HeroProps {
   data: HeroType
@@ -13,8 +11,6 @@ interface HeroProps {
 }
 
 export function Hero({ data, navy250, isPrint = false }: HeroProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
-
   if (isPrint) {
     return (
       <section className="section-navy py-16 page-break-avoid">
@@ -37,28 +33,19 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
   return (
     <section className="relative min-h-[85vh] flex items-start justify-center overflow-hidden pt-16 pb-16">
       {/* Background Image with Ken Burns Effect */}
-      <div className={`absolute top-0 left-0 w-full h-[120%] z-0 ${isLoaded ? 'animate-ken-burns' : ''}`}>
+      <div className="absolute top-0 left-0 w-full h-[120%] z-0 animate-ken-burns">
         {/* We use homepage_right_cropped.jpg directly as requested */}
-        <Image
-          src="/images/homepage_right_cropped.jpg"
-          alt="USS Omaha Submarine"
-          fill
-          priority
-          quality={90}
-          fetchPriority="high"
-          onLoad={() => setIsLoaded(true)}
-          className="object-cover object-center"
-        />
+        <ImageWithFallback src="/images/homepage_right_cropped.jpg" alt="USS Omaha Submarine" fill priority quality={90} className="object-cover object-center" />
 
         {/* Subtle Dark Gradient Overlay for Text Contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-navy/80 z-10" />
       </div>
 
       {/* Content */}
-      <div className={`text-center relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24 transition-opacity duration-[1200ms] ${isLoaded ? 'opacity-100 animate-fade-in' : 'opacity-0'}`}>
+      <div className="text-center animate-fade-in relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24">
         {/* Main Heading */}
         <div className="bg-slate-deep py-6 px-4 md:py-8 w-full shadow-2xl mb-8">
-          <h1 className="text-brass uppercase tracking-wide font-bold text-2xl md:text-3xl lg:text-4xl drop-shadow-md leading-snug">
+          <h1 className="text-brass uppercase tracking-wide">
             {data.heading}
           </h1>
         </div>
@@ -71,7 +58,7 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
         </div>
 
         {/* Subheading */}
-        <p className="text-4xl md:text-5xl lg:text-6xl text-offwhite font-serif drop-shadow-lg">{data.subheading}</p>
+        <p className="text-3xl text-offwhite font-serif">{data.subheading}</p>
 
         {/* Countdown Timer */}
         {navy250.deadline && (
