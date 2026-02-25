@@ -42,7 +42,7 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
       </div>
 
       {/* Content */}
-      <div className="text-center animate-fade-up relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24">
+      <div className="text-center animate-fade-in relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24">
         {/* Main Heading */}
         <h1 className="text-brass uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-navy-dark/60 p-6 rounded-lg backdrop-blur-sm inline-block mx-auto border border-brass/20 shadow-2xl mb-8 leading-tight">{data.heading}</h1>
 
@@ -70,10 +70,12 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
         )}
 
         {/* Scroll Indicator */}
-        <div className="pt-8 animate-bounce">
-          <svg className="w-10 h-10 mx-auto text-brass opacity-90 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
+        <div className="pt-8 animate-fade-in-delay">
+          <div className="animate-bounce">
+            <svg className="w-10 h-10 mx-auto text-brass opacity-90 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
         </div>
       </div>
     </section>
