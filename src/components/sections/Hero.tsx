@@ -44,7 +44,11 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
       {/* Content */}
       <div className="text-center animate-fade-in relative z-20 w-full max-w-4xl mx-auto mt-12 md:mt-24">
         {/* Main Heading */}
-        <h1 className="text-brass uppercase tracking-wide drop-shadow-lg font-black text-2xl md:text-3xl lg:text-4xl bg-navy-dark/80 p-6 rounded-lg backdrop-blur-md inline-block mx-auto border-2 border-brass/20 shadow-2xl mb-8 leading-tight">{data.heading}</h1>
+        <div className="bg-slate-deep py-6 px-4 md:py-8 w-full shadow-2xl mb-8">
+          <h1 className="text-brass uppercase tracking-wide font-bold text-2xl md:text-3xl lg:text-4xl drop-shadow-md leading-snug">
+            {data.heading}
+          </h1>
+        </div>
 
         {/* Decorative Divider */}
         <div className="flex items-center justify-center space-x-4 mb-6">
@@ -54,7 +58,7 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
         </div>
 
         {/* Subheading */}
-        <p className="text-4xl md:text-5xl lg:text-6xl text-offwhite font-serif font-light drop-shadow-md">{data.subheading}</p>
+        <p className="text-4xl md:text-5xl lg:text-6xl text-offwhite font-serif drop-shadow-lg">{data.subheading}</p>
 
         {/* Countdown Timer */}
         {navy250.deadline && (
