@@ -3,7 +3,8 @@
 import { saveContent } from '@/app/admin/actions'
 import { logout } from '@/app/admin/logout-action'
 import { ContentData } from '@/types/content'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import yaml from 'js-yaml'
 
 interface AdminDashboardProps {
   initialData: ContentData
@@ -13,7 +14,17 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const [data, setData] = useState<ContentData>(initialData)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [activeSection, setActiveSection] = useState('hero')
+  const [activeSection, setActiveSection] = useState('metadata')
+  const [rawYaml, setRawYaml] = useState('')
+  const [yamlError, setYamlError] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      setRawYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
+    } catch (e) {
+      console.error('Failed to stringify data for raw editor', e)
+    }
+  }, [data])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -32,10 +43,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     }
   }
 
-  // Immutable update helper
   const updateField = (path: string, value: any) => {
     setData((prev) => {
-      const newData = JSON.parse(JSON.stringify(prev)) // Deep clone for simplicity in nested YAML
+      const newData = JSON.parse(JSON.stringify(prev))
       const keys = path.split('.')
       let current = newData
       for (let i = 0; i < keys.length - 1; i++) {
@@ -46,61 +56,121 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     })
   }
 
+  const handleRawYamlChange = (value: string) => {
+    setRawYaml(value)
+    try {
+      const parsed = yaml.load(value) as ContentData
+      setData(parsed)
+      setYamlError(null)
+    } catch (e: any) {
+      setYamlError(e.message || 'Invalid YAML format')
+    }
+  }
+
   const sections = [
-    { id: 'metadata', label: 'Site Settings' },
-    { id: 'hero', label: 'Hero Section' },
-    { id: 'fundraising', label: 'Fundraising' },
-    { id: 'phases', label: 'Project Phases' },
-    { id: 'mission', label: 'Mission' },
-    { id: 'stakeholders', label: 'Stakeholders' },
+    { group: 'General', items: [
+      { id: 'metadata', label: 'Site Identity' },
+      { id: 'hero', label: 'Hero Section' },
+      { id: 'mission', label: 'Mission' },
+      { id: 'agenda', label: 'Meeting Agenda' },
+      { id: 'footer', label: 'Footer & Links' },
+    ]},
+    { group: 'Historical Content', items: [
+      { id: 'background', label: 'Background Info' },
+      { id: 'timeline', label: 'Ship History' },
+      { id: 'submarineFacts', label: 'Submarine Facts' },
+      { id: 'letters', label: 'Support Letters' },
+    ]},
+    { group: 'The Project', items: [
+      { id: 'phases', label: 'Project Phases' },
+      { id: 'budget', label: 'Budget & Need' },
+      { id: 'locationShift', label: 'Site Selection' },
+      { id: 'sitePlan', label: 'Site Plan' },
+    ]},
+    { group: 'Media', items: [
+      { id: 'gallery', label: 'Image Gallery' },
+      { id: 'executionPhotos', label: 'Execution Photos' },
+      { id: 'navy250', label: 'Navy 250 Assets' },
+    ]},
+    { group: 'Engagement', items: [
+      { id: 'fundraising', label: 'Fundraising Stats' },
+      { id: 'whyNow', label: 'Why Now?' },
+      { id: 'callToAction', label: 'Donation Info' },
+      { id: 'volunteer', label: 'Volunteer Info' },
+      { id: 'stakeholders', label: 'Action Committee' },
+      { id: 'presentedBy', label: 'Presenters' },
+      { id: 'close', label: 'Closing Screen' },
+    ]},
+    { group: 'Advanced', items: [
+      { id: 'godmode', label: '⚡ GOD MODE (Raw Code)' },
+    ]}
   ]
 
+  // UI Helpers
+  const Label = ({ children }: { children: React.ReactNode }) => (
+    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block">{children}</label>
+  )
+
+  const Input = ({ value, onChange, type = "text", placeholder = "" }: any) => (
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" />
+  )
+
+  const TextArea = ({ value, onChange, rows = 3 }: any) => (
+    <textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" />
+  )
+
   return (
-    <div className="flex min-h-screen bg-slate-900 text-white font-sans">
+    <div className="flex h-screen bg-slate-900 text-white font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-800 border-r border-slate-700 p-6 flex flex-col">
-        <h2 className="text-xl font-bold text-yellow-500 mb-8 uppercase tracking-widest">Omaha Admin</h2>
-        <nav className="flex-1 space-y-2">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full text-left px-4 py-3 rounded-xl transition-all font-medium ${
-                activeSection === section.id
-                  ? 'bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20'
-                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-              }`}
-            >
-              {section.label}
-            </button>
+      <aside className="w-72 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
+        <div className="p-6 border-b border-slate-700">
+          <h2 className="text-xl font-black text-yellow-500 uppercase tracking-tighter italic">Omaha Command</h2>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 italic">USS Omaha SSN-692 Relaunch</p>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          {sections.map((group) => (
+            <div key={group.group} className="mb-6">
+              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-4">{group.group}</h4>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`w-full text-left px-4 py-2.5 rounded-lg transition-all text-sm font-bold uppercase tracking-tight ${
+                      activeSection === item.id
+                        ? 'bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20'
+                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
-        <div className="mt-8 space-y-4">
+        <div className="p-6 bg-slate-800/50 border-t border-slate-700 space-y-3">
            <button
             onClick={handleSave}
-            disabled={isSaving}
-            className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all active:scale-95 ${
+            disabled={isSaving || !!yamlError}
+            className={`w-full py-4 rounded-xl font-black text-lg shadow-xl transition-all active:scale-95 uppercase italic tracking-tighter ${
               isSaving
                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-500 text-white hover:shadow-green-500/20'
             }`}
           >
-            {isSaving ? 'Updating...' : 'Publish Changes'}
+            {isSaving ? 'Syncing...' : 'Deploy Changes'}
           </button>
-          
           <form action={logout}>
-            <button
-              type="submit"
-              className="w-full py-2 text-slate-500 hover:text-red-400 text-sm font-medium transition-colors"
-            >
-              Sign Out
+            <button type="submit" className="w-full py-2 text-slate-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest transition-colors">
+              Abort Session (Sign Out)
             </button>
           </form>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-10 overflow-auto">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto bg-slate-900 p-8 custom-scrollbar">
         {message && (
           <div className={`mb-8 p-6 rounded-2xl border-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-300 ${
             message.type === 'success' ? 'bg-green-900/30 border-green-500 text-green-200' : 'bg-red-900/30 border-red-500 text-red-200'
@@ -108,21 +178,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="flex-1">
               <span className="font-bold text-lg block">{message.text}</span>
               {message.type === 'success' && (
-                <p className="text-sm mt-1 opacity-80">
-                  It usually takes about 60 seconds for the preview to be ready.
-                </p>
+                <p className="text-sm mt-1 opacity-80 italic">Update pushed to GitHub. Review the preview branch to sign off.</p>
               )}
             </div>
-            
             <div className="flex gap-3 w-full md:w-auto">
               {message.type === 'success' && (
-                <a 
-                  href="https://uss-omaha-git-admin-content-updates-sudotsu.vercel.app" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white text-slate-900 px-6 py-2 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-all text-center flex-1 md:flex-none"
-                >
-                  View Preview Site
+                <a href="https://uss-omaha-git-admin-content-updates-sudotsu.vercel.app" target="_blank" rel="noopener noreferrer" className="bg-white text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-yellow-500 transition-all text-center flex-1 md:flex-none italic">
+                  Launch Preview
                 </a>
               )}
               <button onClick={() => setMessage(null)} className="text-xl opacity-50 hover:opacity-100 px-2">&times;</button>
@@ -130,163 +192,193 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto pb-20">
+          
+          {/* GOD MODE */}
+          {activeSection === 'godmode' && (
+            <div className="space-y-6">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white">⚡ God Mode</h3>
+              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Full YAML Control • Syntax Validated</p>
+              <textarea value={rawYaml} onChange={(e) => handleRawYamlChange(e.target.value)} className={`w-full h-[60vh] bg-black text-green-400 font-mono p-6 rounded-2xl border-2 focus:outline-none transition-all leading-relaxed ${yamlError ? 'border-red-500 shadow-red-500/10' : 'border-slate-800 focus:border-yellow-500'}`} />
+              {yamlError && <div className="bg-red-900 text-red-100 p-4 rounded-xl text-xs font-mono border border-red-500 animate-in fade-in">{yamlError}</div>}
+            </div>
+          )}
+
+          {/* SITE IDENTITY */}
           {activeSection === 'metadata' && (
-            <section className="space-y-8">
-              <h3 className="text-3xl font-bold mb-8">General Site Settings</h3>
-              <div className="grid gap-6">
-                 <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Website Title</label>
-                  <input
-                    type="text"
-                    value={data.metadata.title}
-                    onChange={(e) => updateField('metadata.title', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Year</label>
-                  <input
-                    type="text"
-                    value={data.metadata.year}
-                    onChange={(e) => updateField('metadata.year', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Identity</h3>
+              <div className="space-y-6">
+                <div><Label>Site Title</Label><Input value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
+                <div><Label>Subtitle</Label><Input value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div><Label>Year</Label><Input value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
+                  <div><Label>Mode</Label><select value={data.metadata.mode} onChange={(e) => updateField('metadata.mode', e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none appearance-none"><option value="memorial">Memorial</option><option value="donor">Donor</option></select></div>
                 </div>
               </div>
-            </section>
+            </div>
           )}
 
+          {/* HERO */}
           {activeSection === 'hero' && (
-            <section className="space-y-8">
-              <h3 className="text-3xl font-bold mb-8">Hero Section</h3>
-              <div className="grid gap-6">
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Main Heading</label>
-                  <textarea
-                    rows={3}
-                    value={data.hero.heading}
-                    onChange={(e) => updateField('hero.heading', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Subheading</label>
-                  <input
-                    type="text"
-                    value={data.hero.subheading}
-                    onChange={(e) => updateField('hero.subheading', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Hero Section</h3>
+              <div className="space-y-6">
+                <div><Label>Main Heading</Label><TextArea rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
+                <div><Label>Subheading</Label><Input value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
+                <div><Label>Background Image Path</Label><Input value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
               </div>
-            </section>
+            </div>
           )}
 
-          {activeSection === 'fundraising' && (
-            <section className="space-y-8">
-              <h3 className="text-3xl font-bold mb-8">Fundraising Progress</h3>
-              <div className="grid grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Total Goal ($)</label>
-                  <input
-                    type="number"
-                    value={data.fundraisingProgress.goal || ''}
-                    onChange={(e) => updateField('fundraisingProgress.goal', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-2xl font-mono focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Amount Raised ($)</label>
-                  <input
-                    type="number"
-                    value={data.fundraisingProgress.raised || ''}
-                    onChange={(e) => updateField('fundraisingProgress.raised', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-2xl font-mono focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                 <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Donor Count</label>
-                  <input
-                    type="number"
-                    value={data.fundraisingProgress.donorCount || ''}
-                    onChange={(e) => updateField('fundraisingProgress.donorCount', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Last Gift Updated</label>
-                  <input
-                    type="text"
-                    value={data.fundraisingProgress.lastGiftTime}
-                    onChange={(e) => updateField('fundraisingProgress.lastGiftTime', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
+          {/* MISSION */}
+          {activeSection === 'mission' && (
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Mission</h3>
+              <div className="space-y-6">
+                <div><Label>Heading</Label><Input value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
+                <div><Label>Statement</Label><TextArea rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
+                <div><Label>Highlights (Comma separated)</Label><Input value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
               </div>
-            </section>
+            </div>
           )}
 
+          {/* AGENDA */}
+          {activeSection === 'agenda' && (
+            <div className="space-y-8">
+              <div className="flex justify-between items-end">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Agenda</h3>
+                <button onClick={() => updateField('agenda.items', [...data.agenda.items, { title: 'New Item', description: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Step</button>
+              </div>
+              <div className="space-y-4">
+                {data.agenda.items.map((item, i) => (
+                  <div key={i} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex gap-4">
+                    <div className="flex-1 grid gap-4">
+                      <Input value={item.title} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].title = v; updateField('agenda.items', next); }} />
+                      <Input value={item.description} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].description = v; updateField('agenda.items', next); }} placeholder="Description" />
+                    </div>
+                    <button onClick={() => updateField('agenda.items', data.agenda.items.filter((_, idx) => idx !== i))} className="text-red-500 font-black text-xl px-2">&times;</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* BACKGROUND */}
+          {activeSection === 'background' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Background Info</h3>
+              <div className="space-y-6">
+                <div><Label>Heading</Label><Input value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
+                <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
+                  <Label>Main Paragraphs (One per line)</Label>
+                  <TextArea rows={6} value={data.background.paragraphs.join('\n\n')} onChange={(v: string) => updateField('background.paragraphs', v.split('\n\n').filter(p => p.trim()))} />
+                </div>
+                <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
+                  <Label>Key Points (Comma separated)</Label>
+                  <Input value={data.background.keyPoints.join(', ')} onChange={(v: string) => updateField('background.keyPoints', v.split(',').map(s => s.trim()))} />
+                </div>
+                <div>
+                  <Label>Background Milestones</Label>
+                  <div className="space-y-4">
+                    {data.background.milestones.map((m, i) => (
+                      <div key={i} className="grid grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <Input value={m.year} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].year = v; updateField('background.milestones', n); }} placeholder="Year" />
+                        <Input value={m.month} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].month = v; updateField('background.milestones', n); }} placeholder="Month" />
+                        <div className="col-span-2 flex gap-2">
+                          <Input value={m.event} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].event = v; updateField('background.milestones', n); }} placeholder="Event" />
+                          <button onClick={() => updateField('background.milestones', data.background.milestones.filter((_, idx) => idx !== i))} className="text-red-500">&times;</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={() => updateField('background.milestones', [...data.background.milestones, { year: '', month: '', event: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Milestone</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* LETTERS */}
+          {activeSection === 'letters' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Support Letters</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
+                <div><Label>Description</Label><TextArea value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
+                <div className="grid gap-6">
+                  {data.letters.items.map((letter, i) => (
+                    <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4 relative">
+                      <button onClick={() => updateField('letters.items', data.letters.items.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-red-500 font-black text-xl">&times;</button>
+                      <div><Label>Letter Title</Label><Input value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div><Label>Document Image Path</Label><Input value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
+                        <div><Label>Preview Excerpt</Label><TextArea value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => updateField('letters.items', [...data.letters.items, { title: 'New Letter', image: '', excerpt: '' }])} className="w-full border-2 border-dashed border-slate-700 py-6 rounded-3xl text-slate-500 font-black text-xs uppercase hover:border-yellow-500 transition-all">+ Add Official Letter</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUBMARINE FACTS */}
+          {activeSection === 'submarineFacts' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Submarine Facts</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
+                <div><Label>Hero Fact Image Path</Label><Input value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
+                <div className="grid grid-cols-3 gap-4">
+                  {data.submarineFacts.facts.map((fact, i) => (
+                    <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative">
+                      <button onClick={() => updateField('submarineFacts.facts', data.submarineFacts.facts.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-[10px]">&times;</button>
+                      <Input value={fact.label} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].label = v; updateField('submarineFacts.facts', n); }} placeholder="Label" />
+                      <Input value={fact.value} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].value = v; updateField('submarineFacts.facts', n); }} placeholder="Value" />
+                    </div>
+                  ))}
+                  <button onClick={() => updateField('submarineFacts.facts', [...data.submarineFacts.facts, { label: '', value: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-[10px] uppercase">+ Add Fact</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TIMELINE */}
+          {activeSection === 'timeline' && (
+            <div className="space-y-10">
+              <div className="flex justify-between items-end">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Ship History</h3>
+                <button onClick={() => updateField('timeline.milestones', [...data.timeline.milestones, { date: '', title: '', details: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Milestone</button>
+              </div>
+              <div className="space-y-4">
+                {data.timeline.milestones.map((m, i) => (
+                  <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-6 items-start">
+                    <div className="w-32"><Label>Date</Label><Input value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
+                    <div className="flex-1 space-y-4">
+                      <div><Label>Title</Label><Input value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
+                      <div><Label>Details</Label><TextArea rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
+                    </div>
+                    <button onClick={() => updateField('timeline.milestones', data.timeline.milestones.filter((_, idx) => idx !== i))} className="text-red-500 pt-8">&times;</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* PHASES */}
           {activeSection === 'phases' && (
             <section className="space-y-12">
-              <h3 className="text-3xl font-bold mb-8">Project Phases</h3>
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Project Phases</h3>
               {data.phases.phaseList.map((phase, idx) => (
                 <div key={idx} className="bg-slate-800/50 p-8 rounded-3xl border border-slate-700 space-y-6">
-                  <h4 className="text-xl font-bold text-yellow-500">Phase {phase.number}: {phase.title}</h4>
+                  <h4 className="text-xl font-black text-yellow-500 italic uppercase tracking-tight">Phase {phase.number}: {phase.title}</h4>
                   <div className="grid gap-6">
-                    <div>
-                      <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Description</label>
-                      <input
-                        type="text"
-                        value={phase.description}
-                        onChange={(e) => {
-                          const newList = [...data.phases.phaseList]
-                          newList[idx].description = e.target.value
-                          updateField('phases.phaseList', newList)
-                        }}
-                        className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 focus:border-yellow-500 outline-none transition-all"
-                      />
-                    </div>
+                    <div><Label>Phase Title</Label><Input value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
+                    <div><Label>Description</Label><Input value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
                     <div className="grid grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Status</label>
-                        <input
-                          type="text"
-                          value={phase.status}
-                          onChange={(e) => {
-                            const newList = [...data.phases.phaseList]
-                            newList[idx].status = e.target.value
-                            updateField('phases.phaseList', newList)
-                          }}
-                          className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 focus:border-yellow-500 outline-none transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Cost</label>
-                        <input
-                          type="text"
-                          value={phase.cost}
-                          onChange={(e) => {
-                            const newList = [...data.phases.phaseList]
-                            newList[idx].cost = e.target.value
-                            updateField('phases.phaseList', newList)
-                          }}
-                          className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 focus:border-yellow-500 outline-none transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-400 text-sm font-bold uppercase mb-2">% Complete</label>
-                        <input
-                          type="number"
-                          value={phase.percentComplete || ''}
-                          onChange={(e) => {
-                            const newList = [...data.phases.phaseList]
-                            newList[idx].percentComplete = e.target.value === '' ? 0 : parseInt(e.target.value)
-                            updateField('phases.phaseList', newList)
-                          }}
-                          className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 focus:border-yellow-500 outline-none transition-all"
-                        />
-                      </div>
+                      <div><Label>Status</Label><Input value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label>Est. Cost</Label><Input value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label>% Complete</Label><Input type="number" value={phase.percentComplete || ''} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].percentComplete = v === '' ? 0 : parseInt(v); updateField('phases.phaseList', nl); }} /></div>
                     </div>
                   </div>
                 </div>
@@ -294,93 +386,320 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             </section>
           )}
 
-          {activeSection === 'mission' && (
-            <section className="space-y-8">
-              <h3 className="text-3xl font-bold mb-8">Mission Statement</h3>
-              <div className="grid gap-6">
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Heading</label>
-                  <input
-                    type="text"
-                    value={data.mission.heading}
-                    onChange={(e) => updateField('mission.heading', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Statement</label>
-                  <textarea
-                    rows={5}
-                    value={data.mission.statement}
-                    onChange={(e) => updateField('mission.statement', e.target.value)}
-                    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
-                  />
-                </div>
+          {/* BUDGET */}
+          {activeSection === 'budget' && (
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Budget & Remaining Need</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
+                <div><Label>Total Remaining Cost (Text)</Label><Input value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
+                <div><Label>Bottom Note</Label><TextArea rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
               </div>
-            </section>
+            </div>
           )}
 
-          {activeSection === 'stakeholders' && (
-            <section className="space-y-8">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-3xl font-bold">Action Committee</h3>
-                <button 
-                  onClick={() => {
-                    const newMembers = [...data.stakeholders.members, { name: 'New Member', title: 'Member Title' }]
-                    updateField('stakeholders.members', newMembers)
-                  }}
-                  className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-lg font-bold text-sm"
-                >
-                  + Add Member
-                </button>
+          {/* LOCATION SHIFT */}
+          {activeSection === 'locationShift' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Selection Story</h3>
+              <div className="grid gap-10">
+                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">Original Concept (Freedom Park)</h4>
+                  <div><Label>Freedom Park Heading</Label><Input value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
+                  <div><Label>Subtitle Explanation</Label><TextArea value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Flood Image Path</Label><Input value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
+                    <div><Label>Flood Image Caption</Label><Input value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
+                  </div>
+                </div>
+                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">New Location (Levi Carter Site)</h4>
+                  <div><Label>Site Heading</Label><Input value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
+                  <div><Label>Description Body</Label><TextArea rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
+                  <div><Label>Map Image Path</Label><Input value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
+                </div>
               </div>
-              <div className="grid gap-4">
-                {data.stakeholders.members.map((member, idx) => (
-                  <div key={idx} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex gap-4 items-start">
-                    <div className="flex-1 grid grid-cols-2 gap-4">
-                      <input
-                        type="text"
-                        placeholder="Name"
-                        value={member.name}
-                        onChange={(e) => {
-                          const newMembers = [...data.stakeholders.members]
-                          newMembers[idx].name = e.target.value
-                          updateField('stakeholders.members', newMembers)
-                        }}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:border-yellow-500 outline-none transition-all"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Title"
-                        value={member.title}
-                        onChange={(e) => {
-                          const newMembers = [...data.stakeholders.members]
-                          newMembers[idx].title = e.target.value
-                          updateField('stakeholders.members', newMembers)
-                        }}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:border-yellow-500 outline-none transition-all"
-                      />
+            </div>
+          )}
+
+          {/* SITE PLAN */}
+          {activeSection === 'sitePlan' && (
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Plan</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
+                <div><Label>Main Description</Label><TextArea value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
+                <div><Label>Detail Description</Label><TextArea value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
+                <div><Label>Plan Render Image Path</Label><Input value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
+              </div>
+            </div>
+          )}
+
+          {/* IMAGE GALLERY (ALREADY PARTIALLY DONE ABOVE) */}
+          {activeSection === 'gallery' && (
+            <section className="space-y-10">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-4xl font-black italic uppercase tracking-tighter">Image Gallery</h3>
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-1">Main Site Assets</p>
+                </div>
+                <button onClick={() => updateField('gallery.images', [...data.gallery.images, { src: '/images/placeholder.jpg', caption: 'New Image' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Item</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {data.gallery.images.map((img, idx) => (
+                  <div key={idx} className="bg-slate-800/50 rounded-3xl border border-slate-700 p-6 space-y-4">
+                    <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
+                      <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <button onClick={() => { const nl = data.gallery.images.filter((_, i) => i !== idx); updateField('gallery.images', nl); }} className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all">&times;</button>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => {
-                        const newMembers = data.stakeholders.members.filter((_, i) => i !== idx)
-                        updateField('stakeholders.members', newMembers)
-                      }}
-                      className="text-red-500 hover:text-red-400 p-2"
-                    >
-                      &times;
-                    </button>
+                    <div><Label>Image Path</Label><Input value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
+                    <div><Label>Caption</Label><Input value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
                   </div>
                 ))}
               </div>
             </section>
           )}
 
-          <div className="mt-20 pt-10 border-t border-slate-800 text-center text-slate-500">
-             <p>Need more fields? Just ask your developer!</p>
+          {/* EXECUTION PHOTOS */}
+          {activeSection === 'executionPhotos' && (
+            <section className="space-y-10">
+              <div className="flex justify-between items-end">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Execution Photos</h3>
+                <button onClick={() => updateField('executionPhotos.photos', [...data.executionPhotos.photos, { src: '/images/placeholder.jpg', caption: 'New Photo', year: '2026' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Photo</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {data.executionPhotos.photos.map((img, idx) => (
+                  <div key={idx} className="bg-slate-800/50 rounded-3xl border border-slate-700 p-6 space-y-4">
+                    <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
+                      <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                      <button onClick={() => { const nl = data.executionPhotos.photos.filter((_, i) => i !== idx); updateField('executionPhotos.photos', nl); }} className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-lg">&times;</button>
+                    </div>
+                    <div><Label>Path</Label><Input value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2"><Label>Caption</Label><Input value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
+                      <div><Label>Year</Label><Input value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* NAVY 250 */}
+          {activeSection === 'navy250' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Navy 250 Assets</h3>
+              <div className="space-y-6 bg-slate-800 p-8 rounded-3xl border border-slate-700">
+                <div><Label>Official Logo Path</Label><Input value={data.navy250.logo} onChange={(v: string) => updateField('navy250.logo', v)} /></div>
+                <div><Label>Main Heading</Label><TextArea value={data.navy250.heading} onChange={(v: string) => updateField('navy250.heading', v)} /></div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div><Label>Deadline (ISO String)</Label><Input value={data.navy250.deadline} onChange={(v: string) => updateField('navy250.deadline', v)} /></div>
+                  <div><Label>Countdown Label</Label><Input value={data.navy250.deadlineLabel} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
+                </div>
+                <div><Label>Countdown Subtext</Label><Input value={data.navy250.deadlineText} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div><Label>Subheading (Vessel Name)</Label><Input value={data.navy250.subheading} onChange={(v: string) => updateField('navy250.subheading', v)} /></div>
+                  <div><Label>Subtitle (Vessel Dates)</Label><Input value={data.navy250.subtitle} onChange={(v: string) => updateField('navy250.subtitle', v)} /></div>
+                </div>
+                <div>
+                  <Label>Asset Images (Comma separated)</Label>
+                  <Input value={data.navy250.images.join(', ')} onChange={(v: string) => updateField('navy250.images', v.split(',').map(s => s.trim()))} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* WHY NOW */}
+          {activeSection === 'whyNow' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Why Now?</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
+                <div><Label>Tagline Footer</Label><Input value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
+                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-4">
+                  <Label>Memorial Project Pricing</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input value={data.whyNow.memorial.name} onChange={(v: string) => updateField('whyNow.memorial.name', v)} />
+                    <Input value={data.whyNow.memorial.cost} onChange={(v: string) => updateField('whyNow.memorial.cost', v)} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Other City Projects (Market Context)</Label>
+                  <div className="space-y-4">
+                    {data.whyNow.projects.map((p, i) => (
+                      <div key={i} className="grid grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <div className="col-span-2"><Input value={p.name} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].name = v; updateField('whyNow.projects', n); }} /></div>
+                        <div className="flex gap-2">
+                          <Input value={p.cost} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].cost = v; updateField('whyNow.projects', n); }} />
+                          <button onClick={() => updateField('whyNow.projects', data.whyNow.projects.filter((_, idx) => idx !== i))} className="text-red-500">&times;</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={() => updateField('whyNow.projects', [...data.whyNow.projects, { name: '', cost: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add City Project</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CALL TO ACTION */}
+          {activeSection === 'callToAction' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Calls to Action</h3>
+              {['memorial', 'donor'].map((mode) => (
+                <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div><Label>Heading</Label><Input value={(data.callToAction as any)[mode].heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
+                    <div><Label>Tagline</Label><Input value={(data.callToAction as any)[mode].tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div><Label>Pledge Form Text</Label><Input value={(data.callToAction as any)[mode].pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
+                    <div><Label>Pledge Form URL</Label><Input value={(data.callToAction as any)[mode].pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
+                  </div>
+                  <div><Label>Tax Note</Label><Input value={(data.callToAction as any)[mode].taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* VOLUNTEER */}
+          {activeSection === 'volunteer' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Volunteer Info</h3>
+              <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                <div><Label>Main Heading</Label><Input value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
+                <div><Label>Subheading</Label><Input value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div><Label>Contact Name</Label><Input value={data.volunteer.contact.name} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
+                  <div><Label>Contact Phone</Label><Input value={data.volunteer.contact.phone} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
+                  <div><Label>Contact Email</Label><Input value={data.volunteer.contact.email} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
+                </div>
+                <div><Label>Organization Name</Label><Input value={data.volunteer.organization} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
+                <div><Label>Organization Contact Details</Label><Input value={data.volunteer.organizationContact} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
+                <div><Label>Opportunities (Comma separated)</Label><TextArea value={data.volunteer.opportunities.join(', ')} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
+              </div>
+            </div>
+          )}
+
+          {/* STAKEHOLDERS */}
+          {activeSection === 'stakeholders' && (
+            <section className="space-y-10">
+              <div className="flex justify-between items-end">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Action Committee</h3>
+                <button onClick={() => updateField('stakeholders.members', [...data.stakeholders.members, { name: 'New Member', title: 'Member Title', subtitle: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Member</button>
+              </div>
+              <div className="grid gap-4">
+                {data.stakeholders.members.map((member, idx) => (
+                  <div key={idx} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-4 items-start relative group">
+                    <button onClick={() => updateField('stakeholders.members', data.stakeholders.members.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                    <div className="flex-1 grid grid-cols-3 gap-4">
+                      <div><Label>Name</Label><Input value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label>Title</Label><Input value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label>Subtitle (Optional)</Label><Input value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* PRESENTED BY */}
+          {activeSection === 'presentedBy' && (
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Presenters</h3>
+              <div className="space-y-6">
+                <div><Label>Section Heading</Label><Input value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
+                <div className="space-y-4">
+                  {data.presentedBy.presenters.map((p, i) => (
+                    <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4 relative group">
+                      <button onClick={() => updateField('presentedBy.presenters', data.presentedBy.presenters.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">&times;</button>
+                      <div><Label>Presenter Name</Label><Input value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label>Organization</Label><Input value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label>Title</Label><Input value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
+                    </div>
+                  ))}
+                  <button onClick={() => updateField('presentedBy.presenters', [...data.presentedBy.presenters, { name: '', org: '', title: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Presenter</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CLOSE */}
+          {activeSection === 'close' && (
+            <div className="space-y-8">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Closing Screen</h3>
+              <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                <div><Label>Main Heading</Label><Input value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
+                <div><Label>Subheading</Label><Input value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div><Label>Contact Org</Label><Input value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
+                  <div><Label>Website</Label><Input value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
+                  <div><Label>Lead Contact</Label><Input value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
+                </div>
+                <div><Label>Final Full-Screen Image Path</Label><Input value={data.close.finalImage} onChange={(v: string) => updateField('close.finalImage', v)} /></div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER & LINKS */}
+          {activeSection === 'footer' && (
+            <div className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Footer & Links</h3>
+              <div className="grid gap-10">
+                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700">
+                  <Label>Mailing Address (One part per line)</Label>
+                  <TextArea rows={4} value={data.footer.address.join('\n')} onChange={(v: string) => updateField('footer.address', v.split('\n'))} />
+                </div>
+                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4">
+                  <div><Label>Contact Name</Label><Input value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
+                  <div><Label>Email</Label><Input value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
+                  <div><Label>Phone</Label><Input value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
+                </div>
+                <div>
+                  <Label>Quick Links</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {data.footer.quickLinks.map((link, i) => (
+                      <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex gap-2">
+                        <Input value={link.label} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].label = v; updateField('footer.quickLinks', n); }} placeholder="Label" />
+                        <Input value={link.href} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].href = v; updateField('footer.quickLinks', n); }} placeholder="URL" />
+                        <button onClick={() => updateField('footer.quickLinks', data.footer.quickLinks.filter((_, idx) => idx !== i))} className="text-red-500 font-black">&times;</button>
+                      </div>
+                    ))}
+                    <button onClick={() => updateField('footer.quickLinks', [...data.footer.quickLinks, { label: '', href: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Link</button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Partner Logos</Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    {data.footer.logos.map((logo, i) => (
+                      <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative group">
+                        <button onClick={() => updateField('footer.logos', data.footer.logos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                        <Input value={logo.src} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].src = v; updateField('footer.logos', n); }} placeholder="Image Path" />
+                        <Input value={logo.alt} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].alt = v; updateField('footer.logos', n); }} placeholder="Alt Text" />
+                      </div>
+                    ))}
+                    <button onClick={() => updateField('footer.logos', [...data.footer.logos, { src: '', alt: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Logo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-20 pt-10 border-t border-slate-800 text-center text-[10px] font-black uppercase tracking-[0.5em] text-slate-600 italic">
+             End of Command Protocol • Transmission Secure
           </div>
         </div>
       </main>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+      `}</style>
     </div>
   )
 }
