@@ -5,13 +5,24 @@ import { NextRequest, NextResponse } from 'next/server'
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET
 const PASSCODE = process.env.ADMIN_PASSCODE
 
-if (!SECRET_KEY || !PASSCODE) {
-  console.warn('ADMIN_JWT_SECRET or ADMIN_PASSCODE is not set. Admin login will be disabled.')
+// Fail closed: If secrets are missing, the app should not allow any auth operations
+const isConfigured = !!(SECRET_KEY && PASSCODE)
+
+if (!isConfigured) {
+  console.error('CRITICAL: ADMIN_JWT_SECRET or ADMIN_PASSCODE is not set. Admin access is disabled.')
 }
 
-const key = new TextEncoder().encode(SECRET_KEY || 'temporary-dev-key-for-local-only')
+const key = new TextEncoder().encode(SECRET_KEY || 'unconfigured-secret-key-logic-disabled')
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+}
 
 export async function encrypt(payload: any) {
+  if (!isConfigured) throw new Error('Authentication not configured')
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -20,6 +31,7 @@ export async function encrypt(payload: any) {
 }
 
 export async function decrypt(input: string): Promise<any> {
+  if (!isConfigured) throw new Error('Authentication not configured')
   const { payload } = await jwtVerify(input, key, {
     algorithms: ['HS256'],
   })
@@ -27,23 +39,23 @@ export async function decrypt(input: string): Promise<any> {
 }
 
 export async function login(passcode: string) {
-  if (!PASSCODE || passcode !== PASSCODE) return false
+  if (!isConfigured || passcode !== PASSCODE) return false
 
-  // Create the session
   const expires = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
   const session = await encrypt({ user: 'admin', expires })
 
-  // Save the session in a cookie
-  ;(await cookies()).set('session', session, { expires, httpOnly: true })
+  const cookieStore = await cookies()
+  cookieStore.set('session', session, { ...COOKIE_OPTIONS, expires })
   return true
 }
 
 export async function logout() {
-  // Destroy the session
-  ;(await cookies()).set('session', '', { expires: new Date(0) })
+  const cookieStore = await cookies()
+  cookieStore.set('session', '', { ...COOKIE_OPTIONS, expires: new Date(0) })
 }
 
 export async function getSession() {
+  if (!isConfigured) return null
   const session = (await cookies()).get('session')?.value
   if (!session) return null
   try {
@@ -54,18 +66,22 @@ export async function getSession() {
 }
 
 export async function updateSession(request: NextRequest) {
+  if (!isConfigured) return
   const session = request.cookies.get('session')?.value
   if (!session) return
 
-  // Refresh the session so it doesn't expire
-  const parsed = await decrypt(session)
-  parsed.expires = new Date(Date.now() + 2 * 60 * 60 * 1000)
-  const res = NextResponse.next()
-  res.cookies.set({
-    name: 'session',
-    value: await encrypt(parsed),
-    httpOnly: true,
-    expires: parsed.expires,
-  })
-  return res
+  try {
+    const parsed = await decrypt(session)
+    parsed.expires = new Date(Date.now() + 2 * 60 * 60 * 1000)
+    const res = NextResponse.next()
+    res.cookies.set({
+      name: 'session',
+      value: await encrypt(parsed),
+      ...COOKIE_OPTIONS,
+      expires: parsed.expires,
+    })
+    return res
+  } catch (e) {
+    return
+  }
 }

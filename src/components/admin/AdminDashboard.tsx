@@ -1,6 +1,7 @@
 'use client'
 
 import { saveContent } from '@/app/admin/actions'
+import { logout } from '@/app/admin/logout-action'
 import { ContentData } from '@/types/content'
 import { useState } from 'react'
 
@@ -31,15 +32,18 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     }
   }
 
+  // Immutable update helper
   const updateField = (path: string, value: any) => {
-    const newData = { ...data } as any
-    const keys = path.split('.')
-    let current = newData
-    for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]]
-    }
-    current[keys[keys.length - 1]] = value
-    setData(newData)
+    setData((prev) => {
+      const newData = JSON.parse(JSON.stringify(prev)) // Deep clone for simplicity in nested YAML
+      const keys = path.split('.')
+      let current = newData
+      for (let i = 0; i < keys.length - 1; i++) {
+        current = current[keys[i]]
+      }
+      current[keys[keys.length - 1]] = value
+      return newData
+    })
   }
 
   const sections = [
@@ -84,10 +88,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             {isSaving ? 'Updating...' : 'Publish Changes'}
           </button>
           
-          <form action={async () => {
-            const { logout } = await import('@/app/admin/logout-action')
-            await logout()
-          }}>
+          <form action={logout}>
             <button
               type="submit"
               className="w-full py-2 text-slate-500 hover:text-red-400 text-sm font-medium transition-colors"
@@ -190,8 +191,8 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Total Goal ($)</label>
                   <input
                     type="number"
-                    value={data.fundraisingProgress.goal}
-                    onChange={(e) => updateField('fundraisingProgress.goal', parseInt(e.target.value))}
+                    value={data.fundraisingProgress.goal || ''}
+                    onChange={(e) => updateField('fundraisingProgress.goal', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-2xl font-mono focus:border-yellow-500 outline-none transition-all"
                   />
                 </div>
@@ -199,8 +200,8 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Amount Raised ($)</label>
                   <input
                     type="number"
-                    value={data.fundraisingProgress.raised}
-                    onChange={(e) => updateField('fundraisingProgress.raised', parseInt(e.target.value))}
+                    value={data.fundraisingProgress.raised || ''}
+                    onChange={(e) => updateField('fundraisingProgress.raised', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-2xl font-mono focus:border-yellow-500 outline-none transition-all"
                   />
                 </div>
@@ -208,8 +209,8 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <label className="block text-slate-400 text-sm font-bold uppercase mb-2">Donor Count</label>
                   <input
                     type="number"
-                    value={data.fundraisingProgress.donorCount}
-                    onChange={(e) => updateField('fundraisingProgress.donorCount', parseInt(e.target.value))}
+                    value={data.fundraisingProgress.donorCount || ''}
+                    onChange={(e) => updateField('fundraisingProgress.donorCount', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-lg focus:border-yellow-500 outline-none transition-all"
                   />
                 </div>
@@ -277,10 +278,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                         <label className="block text-slate-400 text-sm font-bold uppercase mb-2">% Complete</label>
                         <input
                           type="number"
-                          value={phase.percentComplete}
+                          value={phase.percentComplete || ''}
                           onChange={(e) => {
                             const newList = [...data.phases.phaseList]
-                            newList[idx].percentComplete = parseInt(e.target.value)
+                            newList[idx].percentComplete = e.target.value === '' ? 0 : parseInt(e.target.value)
                             updateField('phases.phaseList', newList)
                           }}
                           className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 focus:border-yellow-500 outline-none transition-all"
@@ -375,7 +376,6 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             </section>
           )}
 
-          {/* Add more sections as needed */}
           <div className="mt-20 pt-10 border-t border-slate-800 text-center text-slate-500">
              <p>Need more fields? Just ask your developer!</p>
           </div>
