@@ -47,37 +47,38 @@ export function Gallery({ data, isPrint = false }: GalleryProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex flex-wrap justify-center gap-8">
             {data.images.map((image, index) => (
-              <CardSurface
-                key={index}
-                variant="light"
-                padding="sm"
-                interactive
-                className="group"
-                onClick={() => openLightbox(index)}
-                aria-label={`Open image: ${image.caption}`}
-              >
-                <div className="relative aspect-[4/3] bg-navy/5 rounded-md overflow-hidden mb-4">
-                  <ImageWithFallback
-                    src={image.src}
-                    alt={image.caption}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-navy/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-brass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-                      />
-                    </svg>
+              <div key={index} className="w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]">
+                <CardSurface
+                  variant="light"
+                  padding="sm"
+                  interactive
+                  className="group h-full"
+                  onClick={() => openLightbox(index)}
+                  aria-label={`Open image: ${image.caption}`}
+                >
+                  <div className="relative aspect-[4/3] bg-navy/5 rounded-md overflow-hidden mb-4">
+                    <ImageWithFallback
+                      src={image.src}
+                      alt={image.caption}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-navy/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <svg className="w-12 h-12 text-brass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                        />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <p className="text-slate-deep text-sm leading-relaxed text-center">{image.caption}</p>
-              </CardSurface>
+                  <p className="text-slate-deep text-sm leading-relaxed text-center">{image.caption}</p>
+                </CardSurface>
+              </div>
             ))}
           </div>
 

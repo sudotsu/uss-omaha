@@ -12,10 +12,10 @@ interface NavSection {
 
 interface StickyNavProps {
   sections: NavSection[]
-  pledgeFormUrl: string
+  mainSiteUrl: string
 }
 
-export function StickyNav({ sections, pledgeFormUrl }: StickyNavProps) {
+export function StickyNav({ sections, mainSiteUrl }: StickyNavProps) {
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
@@ -45,9 +45,8 @@ export function StickyNav({ sections, pledgeFormUrl }: StickyNavProps) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 transform ${
-        isScrolled ? 'translate-y-0 shadow-lg' : '-translate-y-full'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 transform ${isScrolled ? 'translate-y-0 shadow-lg' : '-translate-y-full'
+        }`}
     >
       <div className="bg-navy/95 backdrop-blur-md border-b border-brass/20 text-offwhite">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,25 +62,23 @@ export function StickyNav({ sections, pledgeFormUrl }: StickyNavProps) {
                     key={section.id}
                     href={section.href || `#${section.id}`}
                     onClick={(e) => !section.href && scrollToSection(e, section.id)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      section.highlight
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${section.highlight
                         ? 'bg-brass text-navy hover:bg-brass-light'
                         : 'text-offwhite hover:text-brass hover:bg-white/5'
-                    }`}
+                      }`}
                   >
                     {section.label}
                   </a>
                 ))}
 
-                {/* Always visible pledge button if url provided */}
-                {pledgeFormUrl && (
+                {/* Always visible Main Site button */}
+                {mainSiteUrl && (
                   <Button
-                    href={pledgeFormUrl}
+                    href={mainSiteUrl}
                     variant="outline"
-                    download
                     className="ml-4"
                   >
-                    Pledge Form
+                    Main Site
                   </Button>
                 )}
               </div>

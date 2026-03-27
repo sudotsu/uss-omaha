@@ -17,11 +17,11 @@ export function Footer({ data, isPrint = false }: FooterProps) {
           {/* Logo & Address */}
           <div className="md:col-span-1">
             <h3 className="text-brass font-serif font-bold text-lg mb-4">USS Omaha Memorial</h3>
-            <div className="space-y-1 text-sm text-offwhite/80">
+            <ul className="space-y-2 text-sm text-offwhite/80">
               {data.address.map((line, i) => (
-                <p key={i}>{line}</p>
+                <li key={i}>{line}</li>
               ))}
-            </div>
+            </ul>
           </div>
 
           {/* Contact */}
@@ -58,16 +58,32 @@ export function Footer({ data, isPrint = false }: FooterProps) {
 
           {/* Partners/Logos */}
           <div className="md:col-span-1 flex flex-wrap gap-4 items-start content-start">
-             {data.logos.map((logo, i) => (
-               <div key={i} className="relative w-16 h-16 bg-white/5 rounded p-2">
-                 <ImageWithFallback
-                   src={logo.src}
-                   alt={logo.alt}
-                   fill
-                   className="object-contain"
-                 />
-               </div>
-             ))}
+            {data.logos.map((logo, i) => {
+              const Content = (
+                <ImageWithFallback
+                  src={logo.src}
+                  alt={logo.alt}
+                  fill
+                  className="object-contain"
+                />
+              )
+
+              return logo.href ? (
+                <a
+                  key={i}
+                  href={logo.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative w-16 h-16 bg-white/5 rounded p-2 hover:bg-white/10 transition-colors block"
+                >
+                  {Content}
+                </a>
+              ) : (
+                <div key={i} className="relative w-16 h-16 bg-white/5 rounded p-2">
+                  {Content}
+                </div>
+              )
+            })}
           </div>
         </div>
 

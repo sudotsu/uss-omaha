@@ -25,6 +25,7 @@ const config: Config = {
           light: '#CBD5E1',
         },
       },
+
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-merriweather)', 'Georgia', 'serif'],

@@ -10,7 +10,7 @@ metadata:
 hero:
   heading: "250 Years of Defending Freedom, Protecting Prosperity"
   subheading: "USS Omaha SSN-692 Memorial 2026"
-  backgroundImage: "/images/hero-sub.png"
+  backgroundImage: "/images/hero-final.webp"
 
 mission:
   heading: "Our Mission"
@@ -133,13 +133,14 @@ budget:
   note: "Cost Estimates as of July 2025. Total Cost Remaining includes Design & Construction Admin & Contingency Costs."
 
 locationShift:
-  heading: "Freedom Park"
+  heading: "Freedom Park Site"
   subtitle: "The initial thought was to locate the USS Omaha at Freedom Park. That changed after the Summer 2011 Missouri River Flood."
-  floodImage: "/images/freedom-park-flood.png"
+  floodImage: "/images/gallery/Freedom Park Flood Photo-July 2011.webp"
   floodCaption: "Freedom Park during the 2011 Missouri River Flood"
   newLocationHeading: "Levi Carter Park Site"
   newLocationBody: "Instead of relocating Freedom Park, it was decided to find a location just for the USS Omaha & the USS Nebraska. (Future Plan) Levi Carter Park, located along Abbott Drive, was chosen as the site."
   mapImage: "/images/location/levi-carter-map-authentic.jpg"
+  mapCaption: "Levi Carter Park Location Map"
 
 sitePlan:
   heading: "USS Omaha SSN 692 - The Site Plan"
@@ -150,14 +151,16 @@ sitePlan:
 gallery:
   heading: "USS Omaha SSN 692"
   images:
-    - src: "/images/gallery/a10-sub.jpg"
-      caption: "A-10 Warthog flying over USS Omaha"
     - src: "/images/gallery/watercolor-aerial.jpg"
       caption: "Watercolor Concept: Aerial view of the memorial park"
     - src: "/images/gallery/watercolor-ceremony.jpg"
       caption: "Watercolor Concept: Dedication Ceremony view"
     - src: "/images/gallery/memorial-watercolor.jpg"
       caption: "Watercolor Concept: Memorial perspective"
+    - src: "/images/gallery/P6173228.webp"
+      caption: "Site Preparation: Early groundwork at the Levi Carter Park location"
+    - src: "/images/gallery/P6173233.webp"
+      caption: "Construction Progress: Foundation work for the memorial site"
 
 executionPhotos:
   heading: "USS Omaha SSN 692 Phase 1 Execution"
@@ -227,7 +230,7 @@ callToAction:
       note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
     taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
     pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/forms/Pledge_Form_Blank_Final.pdf"
+    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
   donor:
     heading: "USS Omaha Call to Action"
     tagline: "Honor the Past. Build the Future."
@@ -248,35 +251,27 @@ callToAction:
       note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
     taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
     pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/forms/Pledge_Form_Blank_Final.pdf"
+    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
 
 volunteer:
   heading: "USS Omaha Call to Action"
   subheading: "Community Engagement or Volunteer Opportunities"
   contact:
-    name: "Joe Higgins"
-    phone: "(402) 515-5563"
-    email: "LeviCarterNeighborhood@gmail.com"
-  opportunities:
-    - "Levi Carter Lake Shoreline Cleanup"
-  organization: "Levi Carter Sherman Neighborhood Association"
-  organizationContact: "Joe Higgins, Call/Text (402) 515-5563"
+    name: "General Info"
+    email: "info@ussomahamemorial.org"
 
 stakeholders:
-  heading: "USS Omaha Action Committee"
+  heading: "USS Omaha Memorial Action Committee"
   members:
     - name: "Mark Thompson"
       title: "USSVI Marlin Base, Base CDR"
       subtitle: "USN LCDR Ret"
-    - name: "Dennis Bryers"
-      title: "Park Planner, Retired"
+    - name: "Jeff Green"
+      title: "Project Program Engineer"
     - name: "Jay Armstrong"
       title: "Community Member, USN Vet"
     - name: "Lauren Marie Foster"
       title: "Omaha Parks & Recreation Board Chair"
-    - name: "Joe Higgins"
-      title: "Levi Carter Sherman Neighborhood Assn"
-      subtitle: "OIPA CAC USN Vet"
 
 close:
   heading: "Questions?"
@@ -285,7 +280,6 @@ close:
     organization: "USSVI MARLIN BASE"
     website: "www.marlinbase.org"
     contact: "Mark Thompson"
-  finalImage: "/images/hero-sub.png"
 
 presentedBy:
   heading: "Presented By:"
@@ -293,38 +287,47 @@ presentedBy:
     - name: "Mark Thompson, USN LCDR Ret"
       org: "US Submarine Veterans, Inc. USSVI"
       title: "Marlin Base CDR"
-    - name: "Joe Higgins, President (USN Vet)"
-      org: "Levi Carter Sherman Neighborhood Assn."
-      title: "CAC- Omaha Inland Port Authority"
 
 footer:
   address:
-    - "PO Box 1063"
-    - "Groton, CT 06340"
+    - "Bellevue University"
+    - "Military Veteran Services Center MVSC ESB 4476"
+    - "John B. Muller Administrative Services Building"
+    - "812 Bruin Blvd, Bellevue, NE 68005"
   contact:
     name: "General Info"
-    email: "info@ussomaha.org"
-    phone: "(555) 123-4567"
+    email: "info@ussomahamemorial.org"
+    phone: "(402) 557-7820"
   quickLinks:
     - label: "Home"
       href: "/"
+    - label: "Mission"
+      href: "#mission"
+    - label: "Phases"
+      href: "#phases"
+    - label: "Gallery"
+      href: "#gallery"
     - label: "Donate"
       href: "https://ussomahamemorial.org/donate"
   logos:
     - src: "/images/logos/omaha-parks.png"
       alt: "Omaha Parks Foundation"
-    - src: "/images/logos/ussvi-marlin.jpg"
+      href: "https://omahaparksfoundation.org/"
+    - src: "/images/logos/ussvi-marlin.png"
       alt: "USSVI Marlin Base"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "City of Omaha"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "Omaha Parks Recreation Public Property"
-    - src: "/images/logos/omaha-parks.png"
-      alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
-    - src: "/images/logos/levi-carter-seal.png"
-      alt: "Levi Carter Sherman Neighborhood Association"
+      href: "http://www.marlinbase.org/"
+    - src: "/images/logos/ussvcf.webp"
+      alt: "U.S. Submarine Veterans Charitable Foundation"
+      href: "https://ussvcf.org/"
     - src: "/images/logos/usnl-seal.jpg"
       alt: "US Navy League"
+      href: "https://www.navyleague.org/"
+    - src: "/images/logos/Big-Red-Sub-Club.png"
+      alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
+      href: "https://bigredsubclub.com/"
+    - src: "/images/logos/national-garden-club.png"
+      alt: "National Garden Club, Inc"
+      href: "https://gardenclub.org/"
 
 navy250:
   logo: "/images/logos/navy-250-authentic.png"
