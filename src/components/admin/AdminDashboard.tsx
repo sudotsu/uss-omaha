@@ -3,8 +3,40 @@
 import { saveContent } from '@/app/admin/actions'
 import { logout } from '@/app/admin/logout-action'
 import { ContentData } from '@/types/content'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import yaml from 'js-yaml'
+
+// --- UI HELPER COMPONENTS (Moved outside to prevent re-renders) ---
+
+const Label = memo(({ children }: { children: React.ReactNode }) => (
+  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block">
+    {children}
+  </label>
+))
+Label.displayName = 'Label'
+
+const Input = memo(({ value, onChange, type = "text", placeholder = "" }: any) => (
+  <input 
+    type={type} 
+    value={value} 
+    onChange={(e) => onChange(e.target.value)} 
+    placeholder={placeholder} 
+    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
+  />
+))
+Input.displayName = 'Input'
+
+const TextArea = memo(({ value, onChange, rows = 3 }: any) => (
+  <textarea 
+    rows={rows} 
+    value={value} 
+    onChange={(e) => onChange(e.target.value)} 
+    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
+  />
+))
+TextArea.displayName = 'TextArea'
+
+// --- MAIN COMPONENT ---
 
 interface AdminDashboardProps {
   initialData: ContentData
@@ -18,9 +50,12 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const [rawYaml, setRawYaml] = useState('')
   const [yamlError, setYamlError] = useState<string | null>(null)
 
+  // Sync raw YAML when form data changes
   useEffect(() => {
     try {
-      setRawYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
+      const dump = yaml.dump(data, { indent: 2, lineWidth: -1 })
+      setRawYaml(dump)
+      setYamlError(null) // FIX: Clear errors when form syncs successfully
     } catch (e) {
       console.error('Failed to stringify data for raw editor', e)
     }
@@ -59,8 +94,17 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const handleRawYamlChange = (value: string) => {
     setRawYaml(value)
     try {
-      const parsed = yaml.load(value) as ContentData
-      setData(parsed)
+      const parsed = yaml.load(value) as any
+      
+      // Basic validation: Ensure top-level required keys exist
+      const requiredKeys = ['metadata', 'hero', 'mission', 'fundraisingProgress', 'phases']
+      const missing = requiredKeys.filter(key => !parsed || !parsed[key])
+      
+      if (missing.length > 0) {
+        throw new Error(`Missing required sections: ${missing.join(', ')}`)
+      }
+
+      setData(parsed as ContentData)
       setYamlError(null)
     } catch (e: any) {
       setYamlError(e.message || 'Invalid YAML format')
@@ -105,19 +149,6 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
       { id: 'godmode', label: '⚡ GOD MODE (Raw Code)' },
     ]}
   ]
-
-  // UI Helpers
-  const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block">{children}</label>
-  )
-
-  const Input = ({ value, onChange, type = "text", placeholder = "" }: any) => (
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" />
-  )
-
-  const TextArea = ({ value, onChange, rows = 3 }: any) => (
-    <textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" />
-  )
 
   return (
     <div className="flex h-screen bg-slate-900 text-white font-sans overflow-hidden">
@@ -378,7 +409,19 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                     <div className="grid grid-cols-3 gap-6">
                       <div><Label>Status</Label><Input value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
                       <div><Label>Est. Cost</Label><Input value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
-                      <div><Label>% Complete</Label><Input type="number" value={phase.percentComplete || ''} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].percentComplete = v === '' ? 0 : parseInt(v); updateField('phases.phaseList', nl); }} /></div>
+                      <div>
+                        <Label>% Complete</Label>
+                        <Input 
+                          type="number" 
+                          value={phase.percentComplete || ''} 
+                          onChange={(v: string) => { 
+                            const nl = [...data.phases.phaseList]; 
+                            const parsed = parseInt(v, 10);
+                            nl[idx].percentComplete = isNaN(parsed) ? 0 : parsed; // FIX: NaN Guard
+                            updateField('phases.phaseList', nl); 
+                          }} 
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -435,7 +478,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             </div>
           )}
 
-          {/* IMAGE GALLERY (ALREADY PARTIALLY DONE ABOVE) */}
+          {/* IMAGE GALLERY */}
           {activeSection === 'gallery' && (
             <section className="space-y-10">
               <div className="flex justify-between items-end">
@@ -511,6 +554,52 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             </div>
           )}
 
+          {/* FUNDRAISING */}
+          {activeSection === 'fundraising' && (
+            <section className="space-y-10">
+              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Fundraising Progress</h3>
+              <div className="grid grid-cols-2 gap-10">
+                <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
+                  <Label>Current Goal ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={data.fundraisingProgress.goal || ''} 
+                    onChange={(v: string) => {
+                      const parsed = parseInt(v, 10);
+                      updateField('fundraisingProgress.goal', isNaN(parsed) ? 0 : parsed);
+                    }} 
+                  />
+                </div>
+                <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
+                  <Label>Amount Raised ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={data.fundraisingProgress.raised || ''} 
+                    onChange={(v: string) => {
+                      const parsed = parseInt(v, 10);
+                      updateField('fundraisingProgress.raised', isNaN(parsed) ? 0 : parsed);
+                    }} 
+                  />
+                </div>
+                <div>
+                  <Label>Donor Count</Label>
+                  <Input 
+                    type="number" 
+                    value={data.fundraisingProgress.donorCount || ''} 
+                    onChange={(v: string) => {
+                      const parsed = parseInt(v, 10);
+                      updateField('fundraisingProgress.donorCount', isNaN(parsed) ? 0 : parsed);
+                    }} 
+                  />
+                </div>
+                <div>
+                  <Label>Last Gift Timestamp</Label>
+                  <Input value={data.fundraisingProgress.lastGiftTime} onChange={(v: string) => updateField('fundraisingProgress.lastGiftTime', v)} />
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* WHY NOW */}
           {activeSection === 'whyNow' && (
             <div className="space-y-10">
@@ -548,20 +637,23 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {activeSection === 'callToAction' && (
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Calls to Action</h3>
-              {['memorial', 'donor'].map((mode) => (
-                <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div><Label>Heading</Label><Input value={(data.callToAction as any)[mode].heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
-                    <div><Label>Tagline</Label><Input value={(data.callToAction as any)[mode].tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
+              {(['memorial', 'donor'] as const).map((mode) => {
+                const modeData = data.callToAction[mode];
+                return (
+                  <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
+                    <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div><Label>Heading</Label><Input value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
+                      <div><Label>Tagline</Label><Input value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div><Label>Pledge Form Text</Label><Input value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
+                      <div><Label>Pledge Form URL</Label><Input value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
+                    </div>
+                    <div><Label>Tax Note</Label><Input value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div><Label>Pledge Form Text</Label><Input value={(data.callToAction as any)[mode].pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
-                    <div><Label>Pledge Form URL</Label><Input value={(data.callToAction as any)[mode].pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
-                  </div>
-                  <div><Label>Tax Note</Label><Input value={(data.callToAction as any)[mode].taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -573,13 +665,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                 <div><Label>Main Heading</Label><Input value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
                 <div><Label>Subheading</Label><Input value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Contact Name</Label><Input value={data.volunteer.contact.name} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
-                  <div><Label>Contact Phone</Label><Input value={data.volunteer.contact.phone} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
-                  <div><Label>Contact Email</Label><Input value={data.volunteer.contact.email} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
+                  <div><Label>Contact Name</Label><Input value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
+                  <div><Label>Contact Phone</Label><Input value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
+                  <div><Label>Contact Email</Label><Input value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
                 </div>
-                <div><Label>Organization Name</Label><Input value={data.volunteer.organization} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
-                <div><Label>Organization Contact Details</Label><Input value={data.volunteer.organizationContact} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
-                <div><Label>Opportunities (Comma separated)</Label><TextArea value={data.volunteer.opportunities.join(', ')} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
+                <div><Label>Organization Name</Label><Input value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
+                <div><Label>Organization Contact Details</Label><Input value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
+                <div><Label>Opportunities (Comma separated)</Label><TextArea value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
               </div>
             </div>
           )}
@@ -639,7 +731,6 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div><Label>Website</Label><Input value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
                   <div><Label>Lead Contact</Label><Input value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
                 </div>
-                <div><Label>Final Full-Screen Image Path</Label><Input value={data.close.finalImage} onChange={(v: string) => updateField('close.finalImage', v)} /></div>
               </div>
             </div>
           )}
