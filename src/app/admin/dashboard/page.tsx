@@ -1,8 +1,8 @@
-import { loadContent } from '@/lib/content'
+import { loadDraftContent } from '@/app/admin/actions'
 import { AdminDashboard } from '@/components/admin/AdminDashboard'
 
-export default function DashboardPage() {
-  const content = loadContent()
+export default async function DashboardPage() {
+  const content = await loadDraftContent()
 
   return <AdminDashboard initialData={content} />
 }

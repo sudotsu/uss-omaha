@@ -14,6 +14,33 @@ const REPO_NAME = process.env.REPO_NAME || 'uss-omaha'
 const TARGET_BRANCH = 'admin-content-updates'
 const BASE_BRANCH = 'main' // The source branch to branch off from
 
+export async function loadDraftContent(): Promise<ContentData> {
+  if (!GITHUB_TOKEN) {
+    return loadContent()
+  }
+
+  const octokit = new Octokit({ auth: GITHUB_TOKEN })
+
+  try {
+    const { data: fileData } = await octokit.rest.repos.getContent({
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+      path: 'content.yml',
+      ref: TARGET_BRANCH,
+    })
+
+    if (!Array.isArray(fileData) && fileData.type === 'file') {
+      const content = Buffer.from(fileData.content, 'base64').toString('utf8')
+      return yaml.load(content) as ContentData
+    }
+  } catch (e) {
+    // If branch doesn't exist or file not found, fall back to local
+    console.log('No draft branch found, loading local content')
+  }
+
+  return loadContent()
+}
+
 export async function saveContent(newData: ContentData) {
   // 0. Security Check: Verify the user is actually logged in
   const session = await getSession()

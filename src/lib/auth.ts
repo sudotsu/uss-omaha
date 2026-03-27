@@ -2,10 +2,14 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'uss-omaha-secret-key-change-me'
-const PASSCODE = process.env.ADMIN_PASSCODE || 'NNOC-692' // Default passcode if not set
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET
+const PASSCODE = process.env.ADMIN_PASSCODE
 
-const key = new TextEncoder().encode(SECRET_KEY)
+if (!SECRET_KEY || !PASSCODE) {
+  console.warn('ADMIN_JWT_SECRET or ADMIN_PASSCODE is not set. Admin login will be disabled.')
+}
+
+const key = new TextEncoder().encode(SECRET_KEY || 'temporary-dev-key-for-local-only')
 
 export async function encrypt(payload: any) {
   return await new SignJWT(payload)
@@ -23,7 +27,7 @@ export async function decrypt(input: string): Promise<any> {
 }
 
 export async function login(passcode: string) {
-  if (passcode !== PASSCODE) return false
+  if (!PASSCODE || passcode !== PASSCODE) return false
 
   // Create the session
   const expires = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
