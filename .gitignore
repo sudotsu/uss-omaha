@@ -38,4 +38,5 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+*:Zone.Identifier
 venv/
