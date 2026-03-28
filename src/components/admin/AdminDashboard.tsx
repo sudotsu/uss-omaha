@@ -6,32 +6,36 @@ import { ContentData } from '@/types/content'
 import { useState, useEffect, memo } from 'react'
 import yaml from 'js-yaml'
 
-// --- UI HELPER COMPONENTS (Moved outside to prevent re-renders) ---
+// --- UI HELPER COMPONENTS ---
 
-const Label = memo(({ children }: { children: React.ReactNode }) => (
-  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block">
+const Label = memo(({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+  <label 
+    htmlFor={htmlFor}
+    className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block"
+  >
     {children}
   </label>
 ))
 Label.displayName = 'Label'
 
-const Input = memo(({ value, onChange, type = "text", placeholder = "" }: any) => (
+const Input = memo(({ value, onChange, type = "text", ...rest }: any) => (
   <input 
     type={type} 
     value={value} 
     onChange={(e) => onChange(e.target.value)} 
-    placeholder={placeholder} 
     className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
+    {...rest}
   />
 ))
 Input.displayName = 'Input'
 
-const TextArea = memo(({ value, onChange, rows = 3 }: any) => (
+const TextArea = memo(({ value, onChange, rows = 3, ...rest }: any) => (
   <textarea 
     rows={rows} 
     value={value} 
     onChange={(e) => onChange(e.target.value)} 
     className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
+    {...rest}
   />
 ))
 TextArea.displayName = 'TextArea'
@@ -55,7 +59,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     try {
       const dump = yaml.dump(data, { indent: 2, lineWidth: -1 })
       setRawYaml(dump)
-      setYamlError(null) // FIX: Clear errors when form syncs successfully
+      setYamlError(null)
     } catch (e) {
       console.error('Failed to stringify data for raw editor', e)
     }
@@ -78,13 +82,21 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     }
   }
 
+  // Defensive update helper
   const updateField = (path: string, value: any) => {
     setData((prev) => {
       const newData = JSON.parse(JSON.stringify(prev))
       const keys = path.split('.')
       let current = newData
       for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]]
+        const key = keys[i]
+        // Ensure path exists
+        if (current[key] === undefined) {
+          // Guess if it should be an array or object based on next key
+          const nextKey = keys[i + 1]
+          current[key] = isNaN(parseInt(nextKey)) ? {} : []
+        }
+        current = current[key]
       }
       current[keys[keys.length - 1]] = value
       return newData
@@ -96,13 +108,25 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     try {
       const parsed = yaml.load(value) as any
       
-      // Basic validation: Ensure top-level required keys exist
-      const requiredKeys = ['metadata', 'hero', 'mission', 'fundraisingProgress', 'phases']
-      const missing = requiredKeys.filter(key => !parsed || !parsed[key])
+      // Structural validation
+      const requiredSections = [
+        'metadata', 'hero', 'mission', 'agenda', 'background', 
+        'letters', 'submarineFacts', 'timeline', 'phases', 
+        'fundraisingProgress', 'budget', 'locationShift', 
+        'sitePlan', 'gallery', 'executionPhotos', 'whyNow', 
+        'callToAction', 'volunteer', 'stakeholders', 'close', 
+        'presentedBy', 'footer', 'navy250'
+      ]
       
+      const missing = requiredSections.filter(key => !parsed || !parsed[key])
       if (missing.length > 0) {
-        throw new Error(`Missing required sections: ${missing.join(', ')}`)
+        throw new Error(`Invalid Structure: Missing sections [${missing.join(', ')}]`)
       }
+
+      // Basic type validation for lists
+      if (!Array.isArray(parsed.agenda.items)) throw new Error('agenda.items must be an array')
+      if (!Array.isArray(parsed.phases.phaseList)) throw new Error('phases.phaseList must be an array')
+      if (!Array.isArray(parsed.gallery.images)) throw new Error('gallery.images must be an array')
 
       setData(parsed as ContentData)
       setYamlError(null)
@@ -218,7 +242,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   Launch Preview
                 </a>
               )}
-              <button onClick={() => setMessage(null)} className="text-xl opacity-50 hover:opacity-100 px-2">&times;</button>
+              <button onClick={() => setMessage(null)} className="text-xl opacity-50 hover:opacity-100 px-2" aria-label="Dismiss message">&times;</button>
             </div>
           </div>
         )}
@@ -230,7 +254,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-6">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white">⚡ God Mode</h3>
               <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Full YAML Control • Syntax Validated</p>
-              <textarea value={rawYaml} onChange={(e) => handleRawYamlChange(e.target.value)} className={`w-full h-[60vh] bg-black text-green-400 font-mono p-6 rounded-2xl border-2 focus:outline-none transition-all leading-relaxed ${yamlError ? 'border-red-500 shadow-red-500/10' : 'border-slate-800 focus:border-yellow-500'}`} />
+              <textarea 
+                id="raw-yaml-editor"
+                aria-label="Raw YAML Editor"
+                value={rawYaml} 
+                onChange={(e) => handleRawYamlChange(e.target.value)} 
+                className={`w-full h-[60vh] bg-black text-green-400 font-mono p-6 rounded-2xl border-2 focus:outline-none transition-all leading-relaxed ${yamlError ? 'border-red-500 shadow-red-500/10' : 'border-slate-800 focus:border-yellow-500'}`} 
+              />
               {yamlError && <div className="bg-red-900 text-red-100 p-4 rounded-xl text-xs font-mono border border-red-500 animate-in fade-in">{yamlError}</div>}
             </div>
           )}
@@ -240,11 +270,17 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Identity</h3>
               <div className="space-y-6">
-                <div><Label>Site Title</Label><Input value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
-                <div><Label>Subtitle</Label><Input value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
+                <div><Label htmlFor="meta-title">Site Title</Label><Input id="meta-title" value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
+                <div><Label htmlFor="meta-subtitle">Subtitle</Label><Input id="meta-subtitle" value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
                 <div className="grid grid-cols-2 gap-6">
-                  <div><Label>Year</Label><Input value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
-                  <div><Label>Mode</Label><select value={data.metadata.mode} onChange={(e) => updateField('metadata.mode', e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none appearance-none"><option value="memorial">Memorial</option><option value="donor">Donor</option></select></div>
+                  <div><Label htmlFor="meta-year">Year</Label><Input id="meta-year" value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
+                  <div>
+                    <Label htmlFor="meta-mode">Mode</Label>
+                    <select id="meta-mode" value={data.metadata.mode} onChange={(e) => updateField('metadata.mode', e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none appearance-none">
+                      <option value="memorial">Memorial</option>
+                      <option value="donor">Donor</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -255,9 +291,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Hero Section</h3>
               <div className="space-y-6">
-                <div><Label>Main Heading</Label><TextArea rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
-                <div><Label>Subheading</Label><Input value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
-                <div><Label>Background Image Path</Label><Input value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
+                <div><Label htmlFor="hero-heading">Main Heading</Label><TextArea id="hero-heading" rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
+                <div><Label htmlFor="hero-sub">Subheading</Label><Input id="hero-sub" value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
+                <div><Label htmlFor="hero-bg">Background Image Path</Label><Input id="hero-bg" value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
               </div>
             </div>
           )}
@@ -267,9 +303,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Mission</h3>
               <div className="space-y-6">
-                <div><Label>Heading</Label><Input value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
-                <div><Label>Statement</Label><TextArea rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
-                <div><Label>Highlights (Comma separated)</Label><Input value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
+                <div><Label htmlFor="mission-heading">Heading</Label><Input id="mission-heading" value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
+                <div><Label htmlFor="mission-statement">Statement</Label><TextArea id="mission-statement" rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
+                <div><Label htmlFor="mission-highlights">Highlights (Comma separated)</Label><Input id="mission-highlights" value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
               </div>
             </div>
           )}
@@ -285,10 +321,15 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                 {data.agenda.items.map((item, i) => (
                   <div key={i} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex gap-4">
                     <div className="flex-1 grid gap-4">
-                      <Input value={item.title} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].title = v; updateField('agenda.items', next); }} />
-                      <Input value={item.description} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].description = v; updateField('agenda.items', next); }} placeholder="Description" />
+                      <Input aria-label={`Agenda item ${i+1} title`} value={item.title} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].title = v; updateField('agenda.items', next); }} />
+                      <Input aria-label={`Agenda item ${i+1} description`} value={item.description} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].description = v; updateField('agenda.items', next); }} placeholder="Description" />
                     </div>
-                    <button onClick={() => updateField('agenda.items', data.agenda.items.filter((_, idx) => idx !== i))} className="text-red-500 font-black text-xl px-2">&times;</button>
+                    <button 
+                      onClick={() => updateField('agenda.items', data.agenda.items.filter((_, idx) => idx !== i))} 
+                      className="text-red-500 font-black text-xl px-2"
+                      aria-label={`Remove agenda item ${i + 1}`}
+                      title="Remove Item"
+                    >&times;</button>
                   </div>
                 ))}
               </div>
@@ -300,25 +341,25 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Background Info</h3>
               <div className="space-y-6">
-                <div><Label>Heading</Label><Input value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
+                <div><Label htmlFor="bg-heading">Heading</Label><Input id="bg-heading" value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
                 <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label>Main Paragraphs (One per line)</Label>
-                  <TextArea rows={6} value={data.background.paragraphs.join('\n\n')} onChange={(v: string) => updateField('background.paragraphs', v.split('\n\n').filter(p => p.trim()))} />
+                  <Label htmlFor="bg-paragraphs">Main Paragraphs (One per line)</Label>
+                  <TextArea id="bg-paragraphs" rows={6} value={data.background.paragraphs.join('\n\n')} onChange={(v: string) => updateField('background.paragraphs', v.split('\n\n').filter(p => p.trim()))} />
                 </div>
                 <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label>Key Points (Comma separated)</Label>
-                  <Input value={data.background.keyPoints.join(', ')} onChange={(v: string) => updateField('background.keyPoints', v.split(',').map(s => s.trim()))} />
+                  <Label htmlFor="bg-points">Key Points (Comma separated)</Label>
+                  <Input id="bg-points" value={data.background.keyPoints.join(', ')} onChange={(v: string) => updateField('background.keyPoints', v.split(',').map(s => s.trim()))} />
                 </div>
                 <div>
                   <Label>Background Milestones</Label>
                   <div className="space-y-4">
                     {data.background.milestones.map((m, i) => (
                       <div key={i} className="grid grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <Input value={m.year} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].year = v; updateField('background.milestones', n); }} placeholder="Year" />
-                        <Input value={m.month} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].month = v; updateField('background.milestones', n); }} placeholder="Month" />
+                        <Input aria-label={`Milestone ${i+1} year`} value={m.year} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].year = v; updateField('background.milestones', n); }} placeholder="Year" />
+                        <Input aria-label={`Milestone ${i+1} month`} value={m.month} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].month = v; updateField('background.milestones', n); }} placeholder="Month" />
                         <div className="col-span-2 flex gap-2">
-                          <Input value={m.event} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].event = v; updateField('background.milestones', n); }} placeholder="Event" />
-                          <button onClick={() => updateField('background.milestones', data.background.milestones.filter((_, idx) => idx !== i))} className="text-red-500">&times;</button>
+                          <Input aria-label={`Milestone ${i+1} event`} value={m.event} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].event = v; updateField('background.milestones', n); }} placeholder="Event" />
+                          <button onClick={() => updateField('background.milestones', data.background.milestones.filter((_, idx) => idx !== i))} className="text-red-500" aria-label={`Remove milestone ${i+1}`}>&times;</button>
                         </div>
                       </div>
                     ))}
@@ -334,16 +375,16 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Support Letters</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
-                <div><Label>Description</Label><TextArea value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
+                <div><Label htmlFor="letters-heading">Section Heading</Label><Input id="letters-heading" value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
+                <div><Label htmlFor="letters-desc">Description</Label><TextArea id="letters-desc" value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
                 <div className="grid gap-6">
                   {data.letters.items.map((letter, i) => (
                     <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4 relative">
-                      <button onClick={() => updateField('letters.items', data.letters.items.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-red-500 font-black text-xl">&times;</button>
-                      <div><Label>Letter Title</Label><Input value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
+                      <button onClick={() => updateField('letters.items', data.letters.items.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-red-500 font-black text-xl" aria-label={`Remove letter ${i+1}`}>&times;</button>
+                      <div><Label htmlFor={`letter-title-${i}`}>Letter Title</Label><Input id={`letter-title-${i}`} value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div><Label>Document Image Path</Label><Input value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
-                        <div><Label>Preview Excerpt</Label><TextArea value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
+                        <div><Label htmlFor={`letter-img-${i}`}>Document Image Path</Label><Input id={`letter-img-${i}`} value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
+                        <div><Label htmlFor={`letter-exc-${i}`}>Preview Excerpt</Label><TextArea id={`letter-exc-${i}`} value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
                       </div>
                     </div>
                   ))}
@@ -358,14 +399,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Submarine Facts</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
-                <div><Label>Hero Fact Image Path</Label><Input value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
+                <div><Label htmlFor="facts-heading">Section Heading</Label><Input id="facts-heading" value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
+                <div><Label htmlFor="facts-img">Hero Fact Image Path</Label><Input id="facts-img" value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
                   {data.submarineFacts.facts.map((fact, i) => (
                     <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative">
-                      <button onClick={() => updateField('submarineFacts.facts', data.submarineFacts.facts.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-[10px]">&times;</button>
-                      <Input value={fact.label} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].label = v; updateField('submarineFacts.facts', n); }} placeholder="Label" />
-                      <Input value={fact.value} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].value = v; updateField('submarineFacts.facts', n); }} placeholder="Value" />
+                      <button onClick={() => updateField('submarineFacts.facts', data.submarineFacts.facts.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-[10px]" aria-label={`Remove fact ${i+1}`}>&times;</button>
+                      <Input aria-label={`Fact ${i+1} label`} value={fact.label} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].label = v; updateField('submarineFacts.facts', n); }} placeholder="Label" />
+                      <Input aria-label={`Fact ${i+1} value`} value={fact.value} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].value = v; updateField('submarineFacts.facts', n); }} placeholder="Value" />
                     </div>
                   ))}
                   <button onClick={() => updateField('submarineFacts.facts', [...data.submarineFacts.facts, { label: '', value: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-[10px] uppercase">+ Add Fact</button>
@@ -384,12 +425,12 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
               <div className="space-y-4">
                 {data.timeline.milestones.map((m, i) => (
                   <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-6 items-start">
-                    <div className="w-32"><Label>Date</Label><Input value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
+                    <div className="w-32"><Label htmlFor={`timeline-date-${i}`}>Date</Label><Input id={`timeline-date-${i}`} value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
                     <div className="flex-1 space-y-4">
-                      <div><Label>Title</Label><Input value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
-                      <div><Label>Details</Label><TextArea rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
+                      <div><Label htmlFor={`timeline-title-${i}`}>Title</Label><Input id={`timeline-title-${i}`} value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
+                      <div><Label htmlFor={`timeline-details-${i}`}>Details</Label><TextArea id={`timeline-details-${i}`} rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
                     </div>
-                    <button onClick={() => updateField('timeline.milestones', data.timeline.milestones.filter((_, idx) => idx !== i))} className="text-red-500 pt-8">&times;</button>
+                    <button onClick={() => updateField('timeline.milestones', data.timeline.milestones.filter((_, idx) => idx !== i))} className="text-red-500 pt-8" aria-label={`Remove history milestone ${i+1}`}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -404,20 +445,21 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                 <div key={idx} className="bg-slate-800/50 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-black text-yellow-500 italic uppercase tracking-tight">Phase {phase.number}: {phase.title}</h4>
                   <div className="grid gap-6">
-                    <div><Label>Phase Title</Label><Input value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
-                    <div><Label>Description</Label><Input value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
+                    <div><Label htmlFor={`phase-title-${idx}`}>Phase Title</Label><Input id={`phase-title-${idx}`} value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
+                    <div><Label htmlFor={`phase-desc-${idx}`}>Description</Label><Input id={`phase-desc-${idx}`} value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
                     <div className="grid grid-cols-3 gap-6">
-                      <div><Label>Status</Label><Input value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
-                      <div><Label>Est. Cost</Label><Input value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label htmlFor={`phase-status-${idx}`}>Status</Label><Input id={`phase-status-${idx}`} value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label htmlFor={`phase-cost-${idx}`}>Est. Cost</Label><Input id={`phase-cost-${idx}`} value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
                       <div>
-                        <Label>% Complete</Label>
+                        <Label htmlFor={`phase-pct-${idx}`}>% Complete</Label>
                         <Input 
+                          id={`phase-pct-${idx}`}
                           type="number" 
                           value={phase.percentComplete || ''} 
                           onChange={(v: string) => { 
                             const nl = [...data.phases.phaseList]; 
                             const parsed = parseInt(v, 10);
-                            nl[idx].percentComplete = isNaN(parsed) ? 0 : parsed; // FIX: NaN Guard
+                            nl[idx].percentComplete = isNaN(parsed) ? 0 : parsed;
                             updateField('phases.phaseList', nl); 
                           }} 
                         />
@@ -434,9 +476,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Budget & Remaining Need</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
-                <div><Label>Total Remaining Cost (Text)</Label><Input value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
-                <div><Label>Bottom Note</Label><TextArea rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
+                <div><Label htmlFor="budget-heading">Section Heading</Label><Input id="budget-heading" value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
+                <div><Label htmlFor="budget-total">Total Remaining Cost (Text)</Label><Input id="budget-total" value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
+                <div><Label htmlFor="budget-note">Bottom Note</Label><TextArea id="budget-note" rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
               </div>
             </div>
           )}
@@ -448,18 +490,18 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
               <div className="grid gap-10">
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">Original Concept (Freedom Park)</h4>
-                  <div><Label>Freedom Park Heading</Label><Input value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
-                  <div><Label>Subtitle Explanation</Label><TextArea value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
+                  <div><Label htmlFor="loc-heading">Freedom Park Heading</Label><Input id="loc-heading" value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
+                  <div><Label htmlFor="loc-sub">Subtitle Explanation</Label><TextArea id="loc-sub" value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label>Flood Image Path</Label><Input value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
-                    <div><Label>Flood Image Caption</Label><Input value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
+                    <div><Label htmlFor="loc-flood">Flood Image Path</Label><Input id="loc-flood" value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
+                    <div><Label htmlFor="loc-flood-cap">Flood Image Caption</Label><Input id="loc-flood-cap" value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
                   </div>
                 </div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">New Location (Levi Carter Site)</h4>
-                  <div><Label>Site Heading</Label><Input value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
-                  <div><Label>Description Body</Label><TextArea rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
-                  <div><Label>Map Image Path</Label><Input value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
+                  <div><Label htmlFor="loc-new-heading">Site Heading</Label><Input id="loc-new-heading" value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
+                  <div><Label htmlFor="loc-new-body">Description Body</Label><TextArea id="loc-new-body" rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
+                  <div><Label htmlFor="loc-map">Map Image Path</Label><Input id="loc-map" value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
                 </div>
               </div>
             </div>
@@ -470,10 +512,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Plan</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
-                <div><Label>Main Description</Label><TextArea value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
-                <div><Label>Detail Description</Label><TextArea value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
-                <div><Label>Plan Render Image Path</Label><Input value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
+                <div><Label htmlFor="plan-heading">Section Heading</Label><Input id="plan-heading" value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
+                <div><Label htmlFor="plan-desc">Main Description</Label><TextArea id="plan-desc" value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
+                <div><Label htmlFor="plan-detail">Detail Description</Label><TextArea id="plan-detail" value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
+                <div><Label htmlFor="plan-img">Plan Render Image Path</Label><Input id="plan-img" value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
               </div>
             </div>
           )}
@@ -494,11 +536,11 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                     <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
                       <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                       <div className="absolute top-2 right-2 flex gap-2">
-                        <button onClick={() => { const nl = data.gallery.images.filter((_, i) => i !== idx); updateField('gallery.images', nl); }} className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all">&times;</button>
+                        <button onClick={() => { const nl = data.gallery.images.filter((_, i) => i !== idx); updateField('gallery.images', nl); }} className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all" aria-label={`Remove gallery image ${idx+1}`}>&times;</button>
                       </div>
                     </div>
-                    <div><Label>Image Path</Label><Input value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
-                    <div><Label>Caption</Label><Input value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
+                    <div><Label htmlFor={`gal-path-${idx}`}>Image Path</Label><Input id={`gal-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
+                    <div><Label htmlFor={`gal-cap-${idx}`}>Caption</Label><Input id={`gal-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
                   </div>
                 ))}
               </div>
@@ -517,12 +559,12 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div key={idx} className="bg-slate-800/50 rounded-3xl border border-slate-700 p-6 space-y-4">
                     <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
                       <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                      <button onClick={() => { const nl = data.executionPhotos.photos.filter((_, i) => i !== idx); updateField('executionPhotos.photos', nl); }} className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-lg">&times;</button>
+                      <button onClick={() => { const nl = data.executionPhotos.photos.filter((_, i) => i !== idx); updateField('executionPhotos.photos', nl); }} className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-lg" aria-label={`Remove execution photo ${idx+1}`}>&times;</button>
                     </div>
-                    <div><Label>Path</Label><Input value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
+                    <div><Label htmlFor={`exe-path-${idx}`}>Path</Label><Input id={`exe-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-2"><Label>Caption</Label><Input value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
-                      <div><Label>Year</Label><Input value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
+                      <div className="col-span-2"><Label htmlFor={`exe-cap-${idx}`}>Caption</Label><Input id={`exe-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
+                      <div><Label htmlFor={`exe-year-${idx}`}>Year</Label><Input id={`exe-year-${idx}`} value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
                     </div>
                   </div>
                 ))}
@@ -535,20 +577,20 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Navy 250 Assets</h3>
               <div className="space-y-6 bg-slate-800 p-8 rounded-3xl border border-slate-700">
-                <div><Label>Official Logo Path</Label><Input value={data.navy250.logo} onChange={(v: string) => updateField('navy250.logo', v)} /></div>
-                <div><Label>Main Heading</Label><TextArea value={data.navy250.heading} onChange={(v: string) => updateField('navy250.heading', v)} /></div>
+                <div><Label htmlFor="navy-logo">Official Logo Path</Label><Input id="navy-logo" value={data.navy250.logo} onChange={(v: string) => updateField('navy250.logo', v)} /></div>
+                <div><Label htmlFor="navy-heading">Main Heading</Label><TextArea id="navy-heading" value={data.navy250.heading} onChange={(v: string) => updateField('navy250.heading', v)} /></div>
                 <div className="grid grid-cols-2 gap-6">
-                  <div><Label>Deadline (ISO String)</Label><Input value={data.navy250.deadline} onChange={(v: string) => updateField('navy250.deadline', v)} /></div>
-                  <div><Label>Countdown Label</Label><Input value={data.navy250.deadlineLabel} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
+                  <div><Label htmlFor="navy-deadline">Deadline (ISO String)</Label><Input id="navy-deadline" value={data.navy250.deadline} onChange={(v: string) => updateField('navy250.deadline', v)} /></div>
+                  <div><Label htmlFor="navy-label">Countdown Label</Label><Input id="navy-label" value={data.navy250.deadlineLabel} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
                 </div>
-                <div><Label>Countdown Subtext</Label><Input value={data.navy250.deadlineText} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
+                <div><Label htmlFor="navy-subtext">Countdown Subtext</Label><Input id="navy-subtext" value={data.navy250.deadlineText} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
                 <div className="grid grid-cols-2 gap-6">
-                  <div><Label>Subheading (Vessel Name)</Label><Input value={data.navy250.subheading} onChange={(v: string) => updateField('navy250.subheading', v)} /></div>
-                  <div><Label>Subtitle (Vessel Dates)</Label><Input value={data.navy250.subtitle} onChange={(v: string) => updateField('navy250.subtitle', v)} /></div>
+                  <div><Label htmlFor="navy-subheading">Subheading (Vessel Name)</Label><Input id="navy-subheading" value={data.navy250.subheading} onChange={(v: string) => updateField('navy250.subheading', v)} /></div>
+                  <div><Label htmlFor="navy-subtitle">Subtitle (Vessel Dates)</Label><Input id="navy-subtitle" value={data.navy250.subtitle} onChange={(v: string) => updateField('navy250.subtitle', v)} /></div>
                 </div>
                 <div>
-                  <Label>Asset Images (Comma separated)</Label>
-                  <Input value={data.navy250.images.join(', ')} onChange={(v: string) => updateField('navy250.images', v.split(',').map(s => s.trim()))} />
+                  <Label htmlFor="navy-images">Asset Images (Comma separated)</Label>
+                  <Input id="navy-images" value={data.navy250.images.join(', ')} onChange={(v: string) => updateField('navy250.images', v.split(',').map(s => s.trim()))} />
                 </div>
               </div>
             </div>
@@ -560,8 +602,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Fundraising Progress</h3>
               <div className="grid grid-cols-2 gap-10">
                 <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
-                  <Label>Current Goal ($)</Label>
+                  <Label htmlFor="fund-goal">Current Goal ($)</Label>
                   <Input 
+                    id="fund-goal"
                     type="number" 
                     value={data.fundraisingProgress.goal || ''} 
                     onChange={(v: string) => {
@@ -571,8 +614,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   />
                 </div>
                 <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
-                  <Label>Amount Raised ($)</Label>
+                  <Label htmlFor="fund-raised">Amount Raised ($)</Label>
                   <Input 
+                    id="fund-raised"
                     type="number" 
                     value={data.fundraisingProgress.raised || ''} 
                     onChange={(v: string) => {
@@ -582,8 +626,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   />
                 </div>
                 <div>
-                  <Label>Donor Count</Label>
+                  <Label htmlFor="fund-donors">Donor Count</Label>
                   <Input 
+                    id="fund-donors"
                     type="number" 
                     value={data.fundraisingProgress.donorCount || ''} 
                     onChange={(v: string) => {
@@ -593,8 +638,8 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   />
                 </div>
                 <div>
-                  <Label>Last Gift Timestamp</Label>
-                  <Input value={data.fundraisingProgress.lastGiftTime} onChange={(v: string) => updateField('fundraisingProgress.lastGiftTime', v)} />
+                  <Label htmlFor="fund-time">Last Gift Timestamp</Label>
+                  <Input id="fund-time" value={data.fundraisingProgress.lastGiftTime} onChange={(v: string) => updateField('fundraisingProgress.lastGiftTime', v)} />
                 </div>
               </div>
             </section>
@@ -605,13 +650,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Why Now?</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
-                <div><Label>Tagline Footer</Label><Input value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
+                <div><Label htmlFor="why-heading">Section Heading</Label><Input id="why-heading" value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
+                <div><Label htmlFor="why-tagline">Tagline Footer</Label><Input id="why-tagline" value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-4">
                   <Label>Memorial Project Pricing</Label>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input value={data.whyNow.memorial.name} onChange={(v: string) => updateField('whyNow.memorial.name', v)} />
-                    <Input value={data.whyNow.memorial.cost} onChange={(v: string) => updateField('whyNow.memorial.cost', v)} />
+                    <Input aria-label="Memorial project name" value={data.whyNow.memorial.name} onChange={(v: string) => updateField('whyNow.memorial.name', v)} />
+                    <Input aria-label="Memorial project cost" value={data.whyNow.memorial.cost} onChange={(v: string) => updateField('whyNow.memorial.cost', v)} />
                   </div>
                 </div>
                 <div>
@@ -619,10 +664,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div className="space-y-4">
                     {data.whyNow.projects.map((p, i) => (
                       <div key={i} className="grid grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div className="col-span-2"><Input value={p.name} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].name = v; updateField('whyNow.projects', n); }} /></div>
+                        <div className="col-span-2"><Input aria-label={`Project ${i+1} name`} value={p.name} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].name = v; updateField('whyNow.projects', n); }} /></div>
                         <div className="flex gap-2">
-                          <Input value={p.cost} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].cost = v; updateField('whyNow.projects', n); }} />
-                          <button onClick={() => updateField('whyNow.projects', data.whyNow.projects.filter((_, idx) => idx !== i))} className="text-red-500">&times;</button>
+                          <Input aria-label={`Project ${i+1} cost`} value={p.cost} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].cost = v; updateField('whyNow.projects', n); }} />
+                          <button onClick={() => updateField('whyNow.projects', data.whyNow.projects.filter((_, idx) => idx !== i))} className="text-red-500" aria-label={`Remove project ${i+1}`}>&times;</button>
                         </div>
                       </div>
                     ))}
@@ -643,14 +688,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                     <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
                     <div className="grid grid-cols-2 gap-6">
-                      <div><Label>Heading</Label><Input value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
-                      <div><Label>Tagline</Label><Input value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
+                      <div><Label htmlFor={`cta-heading-${mode}`}>Heading</Label><Input id={`cta-heading-${mode}`} value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
+                      <div><Label htmlFor={`cta-tagline-${mode}`}>Tagline</Label><Input id={`cta-tagline-${mode}`} value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
-                      <div><Label>Pledge Form Text</Label><Input value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
-                      <div><Label>Pledge Form URL</Label><Input value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
+                      <div><Label htmlFor={`cta-form-text-${mode}`}>Pledge Form Text</Label><Input id={`cta-form-text-${mode}`} value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
+                      <div><Label htmlFor={`cta-form-url-${mode}`}>Pledge Form URL</Label><Input id={`cta-form-url-${mode}`} value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
                     </div>
-                    <div><Label>Tax Note</Label><Input value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
+                    <div><Label htmlFor={`cta-tax-${mode}`}>Tax Note</Label><Input id={`cta-tax-${mode}`} value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
                   </div>
                 );
               })}
@@ -662,16 +707,16 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-10">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Volunteer Info</h3>
               <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label>Main Heading</Label><Input value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
-                <div><Label>Subheading</Label><Input value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
+                <div><Label htmlFor="vol-heading">Main Heading</Label><Input id="vol-heading" value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
+                <div><Label htmlFor="vol-sub">Subheading</Label><Input id="vol-sub" value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Contact Name</Label><Input value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
-                  <div><Label>Contact Phone</Label><Input value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
-                  <div><Label>Contact Email</Label><Input value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
+                  <div><Label htmlFor="vol-name">Contact Name</Label><Input id="vol-name" value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
+                  <div><Label htmlFor="vol-phone">Contact Phone</Label><Input id="vol-phone" value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
+                  <div><Label htmlFor="vol-email">Contact Email</Label><Input id="vol-email" value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
                 </div>
-                <div><Label>Organization Name</Label><Input value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
-                <div><Label>Organization Contact Details</Label><Input value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
-                <div><Label>Opportunities (Comma separated)</Label><TextArea value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
+                <div><Label htmlFor="vol-org">Organization Name</Label><Input id="vol-org" value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
+                <div><Label htmlFor="vol-org-contact">Organization Contact Details</Label><Input id="vol-org-contact" value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
+                <div><Label htmlFor="vol-opps">Opportunities (Comma separated)</Label><TextArea id="vol-opps" value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
               </div>
             </div>
           )}
@@ -686,11 +731,11 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
               <div className="grid gap-4">
                 {data.stakeholders.members.map((member, idx) => (
                   <div key={idx} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-4 items-start relative group">
-                    <button onClick={() => updateField('stakeholders.members', data.stakeholders.members.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                    <button onClick={() => updateField('stakeholders.members', data.stakeholders.members.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove member ${idx+1}`}>&times;</button>
                     <div className="flex-1 grid grid-cols-3 gap-4">
-                      <div><Label>Name</Label><Input value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label>Title</Label><Input value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label>Subtitle (Optional)</Label><Input value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-name-${idx}`}>Name</Label><Input id={`stake-name-${idx}`} value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-title-${idx}`}>Title</Label><Input id={`stake-title-${idx}`} value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-sub-${idx}`}>Subtitle (Optional)</Label><Input id={`stake-sub-${idx}`} value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
                     </div>
                   </div>
                 ))}
@@ -703,14 +748,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Presenters</h3>
               <div className="space-y-6">
-                <div><Label>Section Heading</Label><Input value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
+                <div><Label htmlFor="pres-heading">Section Heading</Label><Input id="pres-heading" value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
                 <div className="space-y-4">
                   {data.presentedBy.presenters.map((p, i) => (
                     <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4 relative group">
-                      <button onClick={() => updateField('presentedBy.presenters', data.presentedBy.presenters.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">&times;</button>
-                      <div><Label>Presenter Name</Label><Input value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label>Organization</Label><Input value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label>Title</Label><Input value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <button onClick={() => updateField('presentedBy.presenters', data.presentedBy.presenters.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100" aria-label={`Remove presenter ${i+1}`}>&times;</button>
+                      <div><Label htmlFor={`pres-name-${i}`}>Presenter Name</Label><Input id={`pres-name-${i}`} value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label htmlFor={`pres-org-${i}`}>Organization</Label><Input id={`pres-org-${i}`} value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label htmlFor={`pres-title-${i}`}>Title</Label><Input id={`pres-title-${i}`} value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
                     </div>
                   ))}
                   <button onClick={() => updateField('presentedBy.presenters', [...data.presentedBy.presenters, { name: '', org: '', title: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Presenter</button>
@@ -724,12 +769,12 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="space-y-8">
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Closing Screen</h3>
               <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label>Main Heading</Label><Input value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
-                <div><Label>Subheading</Label><Input value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
+                <div><Label htmlFor="close-heading">Main Heading</Label><Input id="close-heading" value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
+                <div><Label htmlFor="close-sub">Subheading</Label><Input id="close-sub" value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Contact Org</Label><Input value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
-                  <div><Label>Website</Label><Input value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
-                  <div><Label>Lead Contact</Label><Input value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
+                  <div><Label htmlFor="close-org">Contact Org</Label><Input id="close-org" value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
+                  <div><Label htmlFor="close-web">Website</Label><Input id="close-web" value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
+                  <div><Label htmlFor="close-contact">Lead Contact</Label><Input id="close-contact" value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
                 </div>
               </div>
             </div>
@@ -741,22 +786,22 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
               <h3 className="text-4xl font-black italic uppercase tracking-tighter">Footer & Links</h3>
               <div className="grid gap-10">
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700">
-                  <Label>Mailing Address (One part per line)</Label>
-                  <TextArea rows={4} value={data.footer.address.join('\n')} onChange={(v: string) => updateField('footer.address', v.split('\n'))} />
+                  <Label htmlFor="footer-addr">Mailing Address (One part per line)</Label>
+                  <TextArea id="footer-addr" rows={4} value={data.footer.address.join('\n')} onChange={(v: string) => updateField('footer.address', v.split('\n'))} />
                 </div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4">
-                  <div><Label>Contact Name</Label><Input value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
-                  <div><Label>Email</Label><Input value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
-                  <div><Label>Phone</Label><Input value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
+                  <div><Label htmlFor="footer-name">Contact Name</Label><Input id="footer-name" value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
+                  <div><Label htmlFor="footer-email">Email</Label><Input id="footer-email" value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
+                  <div><Label htmlFor="footer-phone">Phone</Label><Input id="footer-phone" value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
                 </div>
                 <div>
                   <Label>Quick Links</Label>
                   <div className="grid grid-cols-2 gap-4">
                     {data.footer.quickLinks.map((link, i) => (
                       <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex gap-2">
-                        <Input value={link.label} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].label = v; updateField('footer.quickLinks', n); }} placeholder="Label" />
-                        <Input value={link.href} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].href = v; updateField('footer.quickLinks', n); }} placeholder="URL" />
-                        <button onClick={() => updateField('footer.quickLinks', data.footer.quickLinks.filter((_, idx) => idx !== i))} className="text-red-500 font-black">&times;</button>
+                        <Input aria-label={`Link ${i+1} label`} value={link.label} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].label = v; updateField('footer.quickLinks', n); }} placeholder="Label" />
+                        <Input aria-label={`Link ${i+1} URL`} value={link.href} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].href = v; updateField('footer.quickLinks', n); }} placeholder="URL" />
+                        <button onClick={() => updateField('footer.quickLinks', data.footer.quickLinks.filter((_, idx) => idx !== i))} className="text-red-500 font-black" aria-label={`Remove link ${i+1}`}>&times;</button>
                       </div>
                     ))}
                     <button onClick={() => updateField('footer.quickLinks', [...data.footer.quickLinks, { label: '', href: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Link</button>
@@ -767,9 +812,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div className="grid grid-cols-3 gap-4">
                     {data.footer.logos.map((logo, i) => (
                       <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative group">
-                        <button onClick={() => updateField('footer.logos', data.footer.logos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
-                        <Input value={logo.src} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].src = v; updateField('footer.logos', n); }} placeholder="Image Path" />
-                        <Input value={logo.alt} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].alt = v; updateField('footer.logos', n); }} placeholder="Alt Text" />
+                        <button onClick={() => updateField('footer.logos', data.footer.logos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove logo ${i+1}`}>&times;</button>
+                        <Input aria-label={`Logo ${i+1} path`} value={logo.src} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].src = v; updateField('footer.logos', n); }} placeholder="Image Path" />
+                        <Input aria-label={`Logo ${i+1} alt text`} value={logo.alt} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].alt = v; updateField('footer.logos', n); }} placeholder="Alt Text" />
                       </div>
                     ))}
                     <button onClick={() => updateField('footer.logos', [...data.footer.logos, { src: '', alt: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Logo</button>
