@@ -5,18 +5,37 @@ import { logout } from '@/app/admin/logout-action'
 import { ContentData } from '@/types/content'
 import { useState, useEffect, memo } from 'react'
 import yaml from 'js-yaml'
+import { Tooltip, HelpModal } from './HelpSystem'
 
 // --- UI HELPER COMPONENTS ---
 
-const Label = memo(({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-  <label 
-    htmlFor={htmlFor}
-    className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 block"
-  >
-    {children}
-  </label>
+const Label = memo(({ children, htmlFor, tooltip }: { children: React.ReactNode; htmlFor?: string; tooltip?: string }) => (
+  <div className="flex items-center gap-2 mb-3">
+    <label 
+      htmlFor={htmlFor}
+      className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block"
+    >
+      {children}
+    </label>
+    {tooltip && (
+      <Tooltip content={tooltip}>
+        <span className="cursor-help w-4 h-4 rounded-full bg-slate-800 text-slate-500 text-[8px] flex items-center justify-center border border-slate-700 hover:border-yellow-500 transition-colors font-black italic">
+          ?
+        </span>
+      </Tooltip>
+    )}
+  </div>
 ))
 Label.displayName = 'Label'
+
+const HelpButton = ({ onClick }: { onClick: () => void }) => (
+  <button 
+    onClick={onClick}
+    className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-yellow-500 hover:border-yellow-500 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 italic"
+  >
+    <span className="text-yellow-500">?</span> Help Guide
+  </button>
+)
 
 const Input = memo(({ value, onChange, type = "text", ...rest }: any) => (
   <input 
@@ -53,6 +72,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const [activeSection, setActiveSection] = useState('metadata')
   const [rawYaml, setRawYaml] = useState('')
   const [yamlError, setYamlError] = useState<string | null>(null)
+  const [isHelpOpen, setIsHelpOpen] = useState(false)
 
   // Sync raw YAML when form data changes
   useEffect(() => {
@@ -252,7 +272,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* GOD MODE */}
           {activeSection === 'godmode' && (
             <div className="space-y-6">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white">⚡ God Mode</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white">⚡ God Mode</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Full YAML Control • Syntax Validated</p>
               <textarea 
                 id="raw-yaml-editor"
@@ -268,14 +291,17 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* SITE IDENTITY */}
           {activeSection === 'metadata' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Identity</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Identity</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="meta-title">Site Title</Label><Input id="meta-title" value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
-                <div><Label htmlFor="meta-subtitle">Subtitle</Label><Input id="meta-subtitle" value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
+                <div><Label htmlFor="meta-title" tooltip="The main name of your website shown in browser tabs.">Site Title</Label><Input id="meta-title" value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
+                <div><Label htmlFor="meta-subtitle" tooltip="A short tagline that appears near the title.">Subtitle</Label><Input id="meta-subtitle" value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
                 <div className="grid grid-cols-2 gap-6">
-                  <div><Label htmlFor="meta-year">Year</Label><Input id="meta-year" value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
+                  <div><Label htmlFor="meta-year" tooltip="The current operational year of the project.">Year</Label><Input id="meta-year" value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
                   <div>
-                    <Label htmlFor="meta-mode">Mode</Label>
+                    <Label htmlFor="meta-mode" tooltip="Memorial: Standard view. Donor: Focuses on fundraising goals.">Mode</Label>
                     <select id="meta-mode" value={data.metadata.mode} onChange={(e) => updateField('metadata.mode', e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none appearance-none">
                       <option value="memorial">Memorial</option>
                       <option value="donor">Donor</option>
@@ -289,11 +315,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* HERO */}
           {activeSection === 'hero' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Hero Section</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Hero Section</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="hero-heading">Main Heading</Label><TextArea id="hero-heading" rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
-                <div><Label htmlFor="hero-sub">Subheading</Label><Input id="hero-sub" value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
-                <div><Label htmlFor="hero-bg">Background Image Path</Label><Input id="hero-bg" value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
+                <div><Label htmlFor="hero-heading" tooltip="Main title at the very top. Use bold, clear language.">Main Heading</Label><TextArea id="hero-heading" rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
+                <div><Label htmlFor="hero-sub" tooltip="Smaller text that appears under the main heading.">Subheading</Label><Input id="hero-sub" value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
+                <div><Label htmlFor="hero-bg" tooltip="The file location of your background image (e.g., /images/hero.jpg).">Background Image Path</Label><Input id="hero-bg" value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
               </div>
             </div>
           )}
@@ -301,11 +330,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* MISSION */}
           {activeSection === 'mission' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Mission</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Mission</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="mission-heading">Heading</Label><Input id="mission-heading" value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
-                <div><Label htmlFor="mission-statement">Statement</Label><TextArea id="mission-statement" rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
-                <div><Label htmlFor="mission-highlights">Highlights (Comma separated)</Label><Input id="mission-highlights" value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
+                <div><Label htmlFor="mission-heading" tooltip="The title for your mission section.">Heading</Label><Input id="mission-heading" value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
+                <div><Label htmlFor="mission-statement" tooltip="The core reason for this project. Keep it inspiring.">Statement</Label><TextArea id="mission-statement" rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
+                <div><Label htmlFor="mission-highlights" tooltip="List key points separated by commas (e.g., Honor, Legacy, Education).">Highlights (Comma separated)</Label><Input id="mission-highlights" value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
               </div>
             </div>
           )}
@@ -314,7 +346,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {activeSection === 'agenda' && (
             <div className="space-y-8">
               <div className="flex justify-between items-end">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Agenda</h3>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-4xl font-black italic uppercase tracking-tighter">Agenda</h3>
+                    <HelpButton onClick={() => setIsHelpOpen(true)} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
                 <button onClick={() => updateField('agenda.items', [...data.agenda.items, { title: 'New Item', description: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Step</button>
               </div>
               <div className="space-y-4">
@@ -339,19 +378,22 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* BACKGROUND */}
           {activeSection === 'background' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Background Info</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Background Info</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="bg-heading">Heading</Label><Input id="bg-heading" value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
+                <div><Label htmlFor="bg-heading" tooltip="Main title for the historical context section.">Heading</Label><Input id="bg-heading" value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
                 <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label htmlFor="bg-paragraphs">Main Paragraphs (One per line)</Label>
+                  <Label htmlFor="bg-paragraphs" tooltip="Long-form narrative about the project's origins. Use double line breaks.">Main Paragraphs (One per line)</Label>
                   <TextArea id="bg-paragraphs" rows={6} value={data.background.paragraphs.join('\n\n')} onChange={(v: string) => updateField('background.paragraphs', v.split('\n\n').filter(p => p.trim()))} />
                 </div>
                 <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label htmlFor="bg-points">Key Points (Comma separated)</Label>
+                  <Label htmlFor="bg-points" tooltip="Bullet-style highlights for quick scanning.">Key Points (Comma separated)</Label>
                   <Input id="bg-points" value={data.background.keyPoints.join(', ')} onChange={(v: string) => updateField('background.keyPoints', v.split(',').map(s => s.trim()))} />
                 </div>
                 <div>
-                  <Label>Background Milestones</Label>
+                  <Label tooltip="Chronological project developments or prior attempts.">Background Milestones</Label>
                   <div className="space-y-4">
                     {data.background.milestones.map((m, i) => (
                       <div key={i} className="grid grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -373,18 +415,21 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* LETTERS */}
           {activeSection === 'letters' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Support Letters</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Support Letters</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="letters-heading">Section Heading</Label><Input id="letters-heading" value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
-                <div><Label htmlFor="letters-desc">Description</Label><TextArea id="letters-desc" value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
+                <div><Label htmlFor="letters-heading" tooltip="Title for the letters of support section.">Section Heading</Label><Input id="letters-heading" value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
+                <div><Label htmlFor="letters-desc" tooltip="Introductory text describing the community backing.">Description</Label><TextArea id="letters-desc" value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
                 <div className="grid gap-6">
                   {data.letters.items.map((letter, i) => (
                     <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4 relative">
                       <button onClick={() => updateField('letters.items', data.letters.items.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-red-500 font-black text-xl" aria-label={`Remove letter ${i+1}`}>&times;</button>
-                      <div><Label htmlFor={`letter-title-${i}`}>Letter Title</Label><Input id={`letter-title-${i}`} value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
+                      <div><Label htmlFor={`letter-title-${i}`} tooltip="The author or name of the letter of support.">Letter Title</Label><Input id={`letter-title-${i}`} value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div><Label htmlFor={`letter-img-${i}`}>Document Image Path</Label><Input id={`letter-img-${i}`} value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
-                        <div><Label htmlFor={`letter-exc-${i}`}>Preview Excerpt</Label><TextArea id={`letter-exc-${i}`} value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
+                        <div><Label htmlFor={`letter-img-${i}`} tooltip="The file path to the scanned letter image.">Document Image Path</Label><Input id={`letter-img-${i}`} value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
+                        <div><Label htmlFor={`letter-exc-${i}`} tooltip="A short, powerful quote from the letter.">Preview Excerpt</Label><TextArea id={`letter-exc-${i}`} value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
                       </div>
                     </div>
                   ))}
@@ -397,10 +442,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* SUBMARINE FACTS */}
           {activeSection === 'submarineFacts' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Submarine Facts</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Submarine Facts</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="facts-heading">Section Heading</Label><Input id="facts-heading" value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
-                <div><Label htmlFor="facts-img">Hero Fact Image Path</Label><Input id="facts-img" value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
+                <div><Label htmlFor="facts-heading" tooltip="Title for the technical specifications section.">Section Heading</Label><Input id="facts-heading" value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
+                <div><Label htmlFor="facts-img" tooltip="Main illustrative image for the submarine specs.">Hero Fact Image Path</Label><Input id="facts-img" value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
                   {data.submarineFacts.facts.map((fact, i) => (
                     <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative">
@@ -418,17 +466,20 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* TIMELINE */}
           {activeSection === 'timeline' && (
             <div className="space-y-10">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-start">
                 <h3 className="text-4xl font-black italic uppercase tracking-tighter">Ship History</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
+              <div className="flex justify-end">
                 <button onClick={() => updateField('timeline.milestones', [...data.timeline.milestones, { date: '', title: '', details: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Milestone</button>
               </div>
               <div className="space-y-4">
                 {data.timeline.milestones.map((m, i) => (
                   <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-6 items-start">
-                    <div className="w-32"><Label htmlFor={`timeline-date-${i}`}>Date</Label><Input id={`timeline-date-${i}`} value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
+                    <div className="w-32"><Label htmlFor={`timeline-date-${i}`} tooltip="The specific year or date for this event.">Date</Label><Input id={`timeline-date-${i}`} value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
                     <div className="flex-1 space-y-4">
-                      <div><Label htmlFor={`timeline-title-${i}`}>Title</Label><Input id={`timeline-title-${i}`} value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
-                      <div><Label htmlFor={`timeline-details-${i}`}>Details</Label><TextArea id={`timeline-details-${i}`} rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
+                      <div><Label htmlFor={`timeline-title-${i}`} tooltip="Short name for the historical milestone.">Title</Label><Input id={`timeline-title-${i}`} value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
+                      <div><Label htmlFor={`timeline-details-${i}`} tooltip="Detailed explanation of what happened at this point in the ship's life.">Details</Label><TextArea id={`timeline-details-${i}`} rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
                     </div>
                     <button onClick={() => updateField('timeline.milestones', data.timeline.milestones.filter((_, idx) => idx !== i))} className="text-red-500 pt-8" aria-label={`Remove history milestone ${i+1}`}>&times;</button>
                   </div>
@@ -440,18 +491,21 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* PHASES */}
           {activeSection === 'phases' && (
             <section className="space-y-12">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Project Phases</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Project Phases</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               {data.phases.phaseList.map((phase, idx) => (
                 <div key={idx} className="bg-slate-800/50 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-black text-yellow-500 italic uppercase tracking-tight">Phase {phase.number}: {phase.title}</h4>
                   <div className="grid gap-6">
-                    <div><Label htmlFor={`phase-title-${idx}`}>Phase Title</Label><Input id={`phase-title-${idx}`} value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
-                    <div><Label htmlFor={`phase-desc-${idx}`}>Description</Label><Input id={`phase-desc-${idx}`} value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
+                    <div><Label htmlFor={`phase-title-${idx}`} tooltip="The official name for this project phase.">Phase Title</Label><Input id={`phase-title-${idx}`} value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
+                    <div><Label htmlFor={`phase-desc-${idx}`} tooltip="What will be accomplished during this phase.">Description</Label><Input id={`phase-desc-${idx}`} value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
                     <div className="grid grid-cols-3 gap-6">
-                      <div><Label htmlFor={`phase-status-${idx}`}>Status</Label><Input id={`phase-status-${idx}`} value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
-                      <div><Label htmlFor={`phase-cost-${idx}`}>Est. Cost</Label><Input id={`phase-cost-${idx}`} value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label htmlFor={`phase-status-${idx}`} tooltip="Current status (e.g., In Progress, Upcoming, Completed).">Status</Label><Input id={`phase-status-${idx}`} value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
+                      <div><Label htmlFor={`phase-cost-${idx}`} tooltip="The estimated financial requirement for this phase.">Est. Cost</Label><Input id={`phase-cost-${idx}`} value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
                       <div>
-                        <Label htmlFor={`phase-pct-${idx}`}>% Complete</Label>
+                        <Label htmlFor={`phase-pct-${idx}`} tooltip="Numeric completion percentage (0-100).">% Complete</Label>
                         <Input 
                           id={`phase-pct-${idx}`}
                           type="number" 
@@ -474,11 +528,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* BUDGET */}
           {activeSection === 'budget' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Budget & Remaining Need</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Budget & Remaining Need</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="budget-heading">Section Heading</Label><Input id="budget-heading" value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
-                <div><Label htmlFor="budget-total">Total Remaining Cost (Text)</Label><Input id="budget-total" value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
-                <div><Label htmlFor="budget-note">Bottom Note</Label><TextArea id="budget-note" rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
+                <div><Label htmlFor="budget-heading" tooltip="The title for the financial overview section.">Section Heading</Label><Input id="budget-heading" value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
+                <div><Label htmlFor="budget-total" tooltip="The remaining dollar amount needed to reach the goal.">Total Remaining Cost (Text)</Label><Input id="budget-total" value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
+                <div><Label htmlFor="budget-note" tooltip="Additional context regarding the budget or fundraising needs.">Bottom Note</Label><TextArea id="budget-note" rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
               </div>
             </div>
           )}
@@ -486,22 +543,25 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* LOCATION SHIFT */}
           {activeSection === 'locationShift' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Selection Story</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Selection Story</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="grid gap-10">
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">Original Concept (Freedom Park)</h4>
-                  <div><Label htmlFor="loc-heading">Freedom Park Heading</Label><Input id="loc-heading" value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
-                  <div><Label htmlFor="loc-sub">Subtitle Explanation</Label><TextArea id="loc-sub" value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
+                  <div><Label htmlFor="loc-heading" tooltip="Title for the original proposed location.">Freedom Park Heading</Label><Input id="loc-heading" value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
+                  <div><Label htmlFor="loc-sub" tooltip="Why Freedom Park was initially chosen and why it failed.">Subtitle Explanation</Label><TextArea id="loc-sub" value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label htmlFor="loc-flood">Flood Image Path</Label><Input id="loc-flood" value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
-                    <div><Label htmlFor="loc-flood-cap">Flood Image Caption</Label><Input id="loc-flood-cap" value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
+                    <div><Label htmlFor="loc-flood" tooltip="Image showing flood risk or issues at Freedom Park.">Flood Image Path</Label><Input id="loc-flood" value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
+                    <div><Label htmlFor="loc-flood-cap" tooltip="Descriptive text for the flood image.">Flood Image Caption</Label><Input id="loc-flood-cap" value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
                   </div>
                 </div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                   <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">New Location (Levi Carter Site)</h4>
-                  <div><Label htmlFor="loc-new-heading">Site Heading</Label><Input id="loc-new-heading" value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
-                  <div><Label htmlFor="loc-new-body">Description Body</Label><TextArea id="loc-new-body" rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
-                  <div><Label htmlFor="loc-map">Map Image Path</Label><Input id="loc-map" value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
+                  <div><Label htmlFor="loc-new-heading" tooltip="Title for the new, superior location.">Site Heading</Label><Input id="loc-new-heading" value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
+                  <div><Label htmlFor="loc-new-body" tooltip="Detailed benefits of the Levi Carter Park site.">Description Body</Label><TextArea id="loc-new-body" rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
+                  <div><Label htmlFor="loc-map" tooltip="Aerial view or map of the new site location.">Map Image Path</Label><Input id="loc-map" value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
                 </div>
               </div>
             </div>
@@ -510,12 +570,15 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* SITE PLAN */}
           {activeSection === 'sitePlan' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Plan</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Plan</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="plan-heading">Section Heading</Label><Input id="plan-heading" value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
-                <div><Label htmlFor="plan-desc">Main Description</Label><TextArea id="plan-desc" value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
-                <div><Label htmlFor="plan-detail">Detail Description</Label><TextArea id="plan-detail" value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
-                <div><Label htmlFor="plan-img">Plan Render Image Path</Label><Input id="plan-img" value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
+                <div><Label htmlFor="plan-heading" tooltip="The title for the architectural site plan section.">Section Heading</Label><Input id="plan-heading" value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
+                <div><Label htmlFor="plan-desc" tooltip="High-level overview of the memorial's physical layout.">Main Description</Label><TextArea id="plan-desc" value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
+                <div><Label htmlFor="plan-detail" tooltip="Technical or specific details about the construction and landscaping.">Detail Description</Label><TextArea id="plan-detail" value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
+                <div><Label htmlFor="plan-img" tooltip="File path to the architectural rendering or blueprint.">Plan Render Image Path</Label><Input id="plan-img" value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
               </div>
             </div>
           )}
@@ -523,11 +586,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* IMAGE GALLERY */}
           {activeSection === 'gallery' && (
             <section className="space-y-10">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-4xl font-black italic uppercase tracking-tighter">Image Gallery</h3>
                   <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-1">Main Site Assets</p>
                 </div>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
+              <div className="flex justify-end">
                 <button onClick={() => updateField('gallery.images', [...data.gallery.images, { src: '/images/placeholder.jpg', caption: 'New Image' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Item</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -539,8 +605,8 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                         <button onClick={() => { const nl = data.gallery.images.filter((_, i) => i !== idx); updateField('gallery.images', nl); }} className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all" aria-label={`Remove gallery image ${idx+1}`}>&times;</button>
                       </div>
                     </div>
-                    <div><Label htmlFor={`gal-path-${idx}`}>Image Path</Label><Input id={`gal-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
-                    <div><Label htmlFor={`gal-cap-${idx}`}>Caption</Label><Input id={`gal-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
+                    <div><Label htmlFor={`gal-path-${idx}`} tooltip="File path to the gallery image.">Image Path</Label><Input id={`gal-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
+                    <div><Label htmlFor={`gal-cap-${idx}`} tooltip="Caption text displayed under the image.">Caption</Label><Input id={`gal-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
                   </div>
                 ))}
               </div>
@@ -550,8 +616,11 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* EXECUTION PHOTOS */}
           {activeSection === 'executionPhotos' && (
             <section className="space-y-10">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-start">
                 <h3 className="text-4xl font-black italic uppercase tracking-tighter">Execution Photos</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
+              <div className="flex justify-end">
                 <button onClick={() => updateField('executionPhotos.photos', [...data.executionPhotos.photos, { src: '/images/placeholder.jpg', caption: 'New Photo', year: '2026' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Photo</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -561,10 +630,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                       <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                       <button onClick={() => { const nl = data.executionPhotos.photos.filter((_, i) => i !== idx); updateField('executionPhotos.photos', nl); }} className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-lg" aria-label={`Remove execution photo ${idx+1}`}>&times;</button>
                     </div>
-                    <div><Label htmlFor={`exe-path-${idx}`}>Path</Label><Input id={`exe-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
+                    <div><Label htmlFor={`exe-path-${idx}`} tooltip="File path to the on-site photo.">Path</Label><Input id={`exe-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-2"><Label htmlFor={`exe-cap-${idx}`}>Caption</Label><Input id={`exe-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
-                      <div><Label htmlFor={`exe-year-${idx}`}>Year</Label><Input id={`exe-year-${idx}`} value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
+                      <div className="col-span-2"><Label htmlFor={`exe-cap-${idx}`} tooltip="Short description of the photo content.">Caption</Label><Input id={`exe-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
+                      <div><Label htmlFor={`exe-year-${idx}`} tooltip="The year the photo was taken.">Year</Label><Input id={`exe-year-${idx}`} value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
                     </div>
                   </div>
                 ))}
@@ -648,19 +717,22 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* WHY NOW */}
           {activeSection === 'whyNow' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Why Now?</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Why Now?</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="why-heading">Section Heading</Label><Input id="why-heading" value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
-                <div><Label htmlFor="why-tagline">Tagline Footer</Label><Input id="why-tagline" value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
+                <div><Label htmlFor="why-heading" tooltip="The title for the urgency/context section.">Section Heading</Label><Input id="why-heading" value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
+                <div><Label htmlFor="why-tagline" tooltip="A final summary statement about project urgency.">Tagline Footer</Label><Input id="why-tagline" value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-4">
-                  <Label>Memorial Project Pricing</Label>
+                  <Label tooltip="The estimated cost for this specific memorial project.">Memorial Project Pricing</Label>
                   <div className="grid grid-cols-2 gap-4">
                     <Input aria-label="Memorial project name" value={data.whyNow.memorial.name} onChange={(v: string) => updateField('whyNow.memorial.name', v)} />
                     <Input aria-label="Memorial project cost" value={data.whyNow.memorial.cost} onChange={(v: string) => updateField('whyNow.memorial.cost', v)} />
                   </div>
                 </div>
                 <div>
-                  <Label>Other City Projects (Market Context)</Label>
+                  <Label tooltip="Comparative costs of other major city projects for market context.">Other City Projects (Market Context)</Label>
                   <div className="space-y-4">
                     {data.whyNow.projects.map((p, i) => (
                       <div key={i} className="grid grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
@@ -681,21 +753,24 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* CALL TO ACTION */}
           {activeSection === 'callToAction' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Calls to Action</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Calls to Action</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               {(['memorial', 'donor'] as const).map((mode) => {
                 const modeData = data.callToAction[mode];
                 return (
                   <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
                     <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
                     <div className="grid grid-cols-2 gap-6">
-                      <div><Label htmlFor={`cta-heading-${mode}`}>Heading</Label><Input id={`cta-heading-${mode}`} value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
-                      <div><Label htmlFor={`cta-tagline-${mode}`}>Tagline</Label><Input id={`cta-tagline-${mode}`} value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
+                      <div><Label htmlFor={`cta-heading-${mode}`} tooltip="Main heading for the donation call to action.">Heading</Label><Input id={`cta-heading-${mode}`} value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
+                      <div><Label htmlFor={`cta-tagline-${mode}`} tooltip="Supporting text under the heading.">Tagline</Label><Input id={`cta-tagline-${mode}`} value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
-                      <div><Label htmlFor={`cta-form-text-${mode}`}>Pledge Form Text</Label><Input id={`cta-form-text-${mode}`} value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
-                      <div><Label htmlFor={`cta-form-url-${mode}`}>Pledge Form URL</Label><Input id={`cta-form-url-${mode}`} value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
+                      <div><Label htmlFor={`cta-form-text-${mode}`} tooltip="Text displayed on the download button.">Pledge Form Text</Label><Input id={`cta-form-text-${mode}`} value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
+                      <div><Label htmlFor={`cta-form-url-${mode}`} tooltip="Link to the pledge form document.">Pledge Form URL</Label><Input id={`cta-form-url-${mode}`} value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
                     </div>
-                    <div><Label htmlFor={`cta-tax-${mode}`}>Tax Note</Label><Input id={`cta-tax-${mode}`} value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
+                    <div><Label htmlFor={`cta-tax-${mode}`} tooltip="Disclaimer about tax-deductible status.">Tax Note</Label><Input id={`cta-tax-${mode}`} value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
                   </div>
                 );
               })}
@@ -705,18 +780,21 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* VOLUNTEER */}
           {activeSection === 'volunteer' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Volunteer Info</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Volunteer Info</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label htmlFor="vol-heading">Main Heading</Label><Input id="vol-heading" value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
-                <div><Label htmlFor="vol-sub">Subheading</Label><Input id="vol-sub" value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
+                <div><Label htmlFor="vol-heading" tooltip="Main title for the volunteer recruitment section.">Main Heading</Label><Input id="vol-heading" value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
+                <div><Label htmlFor="vol-sub" tooltip="Supporting call to action for volunteers.">Subheading</Label><Input id="vol-sub" value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="vol-name">Contact Name</Label><Input id="vol-name" value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
-                  <div><Label htmlFor="vol-phone">Contact Phone</Label><Input id="vol-phone" value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
-                  <div><Label htmlFor="vol-email">Contact Email</Label><Input id="vol-email" value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
+                  <div><Label htmlFor="vol-name" tooltip="Primary person to contact for volunteering.">Contact Name</Label><Input id="vol-name" value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
+                  <div><Label htmlFor="vol-phone" tooltip="Phone number for volunteer inquiries.">Contact Phone</Label><Input id="vol-phone" value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
+                  <div><Label htmlFor="vol-email" tooltip="Email address for volunteer inquiries.">Contact Email</Label><Input id="vol-email" value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
                 </div>
-                <div><Label htmlFor="vol-org">Organization Name</Label><Input id="vol-org" value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
-                <div><Label htmlFor="vol-org-contact">Organization Contact Details</Label><Input id="vol-org-contact" value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
-                <div><Label htmlFor="vol-opps">Opportunities (Comma separated)</Label><TextArea id="vol-opps" value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
+                <div><Label htmlFor="vol-org" tooltip="The name of the partner organization managing volunteers.">Organization Name</Label><Input id="vol-org" value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
+                <div><Label htmlFor="vol-org-contact" tooltip="How to get in touch with the volunteer organization directly.">Organization Contact Details</Label><Input id="vol-org-contact" value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
+                <div><Label htmlFor="vol-opps" tooltip="List of specific roles or tasks available for volunteers.">Opportunities (Comma separated)</Label><TextArea id="vol-opps" value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
               </div>
             </div>
           )}
@@ -724,8 +802,11 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* STAKEHOLDERS */}
           {activeSection === 'stakeholders' && (
             <section className="space-y-10">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-start">
                 <h3 className="text-4xl font-black italic uppercase tracking-tighter">Action Committee</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
+              <div className="flex justify-end">
                 <button onClick={() => updateField('stakeholders.members', [...data.stakeholders.members, { name: 'New Member', title: 'Member Title', subtitle: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Member</button>
               </div>
               <div className="grid gap-4">
@@ -733,9 +814,9 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                   <div key={idx} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-4 items-start relative group">
                     <button onClick={() => updateField('stakeholders.members', data.stakeholders.members.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove member ${idx+1}`}>&times;</button>
                     <div className="flex-1 grid grid-cols-3 gap-4">
-                      <div><Label htmlFor={`stake-name-${idx}`}>Name</Label><Input id={`stake-name-${idx}`} value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label htmlFor={`stake-title-${idx}`}>Title</Label><Input id={`stake-title-${idx}`} value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label htmlFor={`stake-sub-${idx}`}>Subtitle (Optional)</Label><Input id={`stake-sub-${idx}`} value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-name-${idx}`} tooltip="The full name of the committee member.">Name</Label><Input id={`stake-name-${idx}`} value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-title-${idx}`} tooltip="The member's primary professional title or role.">Title</Label><Input id={`stake-title-${idx}`} value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
+                      <div><Label htmlFor={`stake-sub-${idx}`} tooltip="Additional organization or context for this member.">Subtitle (Optional)</Label><Input id={`stake-sub-${idx}`} value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
                     </div>
                   </div>
                 ))}
@@ -746,16 +827,19 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* PRESENTED BY */}
           {activeSection === 'presentedBy' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Presenters</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Presenters</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="space-y-6">
-                <div><Label htmlFor="pres-heading">Section Heading</Label><Input id="pres-heading" value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
+                <div><Label htmlFor="pres-heading" tooltip="The title for the presenter introduction section.">Section Heading</Label><Input id="pres-heading" value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
                 <div className="space-y-4">
                   {data.presentedBy.presenters.map((p, i) => (
                     <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4 relative group">
                       <button onClick={() => updateField('presentedBy.presenters', data.presentedBy.presenters.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100" aria-label={`Remove presenter ${i+1}`}>&times;</button>
-                      <div><Label htmlFor={`pres-name-${i}`}>Presenter Name</Label><Input id={`pres-name-${i}`} value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label htmlFor={`pres-org-${i}`}>Organization</Label><Input id={`pres-org-${i}`} value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label htmlFor={`pres-title-${i}`}>Title</Label><Input id={`pres-title-${i}`} value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label htmlFor={`pres-name-${i}`} tooltip="Full name of the presenter.">Presenter Name</Label><Input id={`pres-name-${i}`} value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label htmlFor={`pres-org-${i}`} tooltip="The organization the presenter represents.">Organization</Label><Input id={`pres-org-${i}`} value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
+                      <div><Label htmlFor={`pres-title-${i}`} tooltip="The presenter's official title.">Title</Label><Input id={`pres-title-${i}`} value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
                     </div>
                   ))}
                   <button onClick={() => updateField('presentedBy.presenters', [...data.presentedBy.presenters, { name: '', org: '', title: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Presenter</button>
@@ -767,14 +851,17 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* CLOSE */}
           {activeSection === 'close' && (
             <div className="space-y-8">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Closing Screen</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Closing Screen</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label htmlFor="close-heading">Main Heading</Label><Input id="close-heading" value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
-                <div><Label htmlFor="close-sub">Subheading</Label><Input id="close-sub" value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
+                <div><Label htmlFor="close-heading" tooltip="The main headline for the final screen.">Main Heading</Label><Input id="close-heading" value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
+                <div><Label htmlFor="close-sub" tooltip="A brief wrap-up message.">Subheading</Label><Input id="close-sub" value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="close-org">Contact Org</Label><Input id="close-org" value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
-                  <div><Label htmlFor="close-web">Website</Label><Input id="close-web" value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
-                  <div><Label htmlFor="close-contact">Lead Contact</Label><Input id="close-contact" value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
+                  <div><Label htmlFor="close-org" tooltip="The organization name for contact.">Contact Org</Label><Input id="close-org" value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
+                  <div><Label htmlFor="close-web" tooltip="The official project URL.">Website</Label><Input id="close-web" value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
+                  <div><Label htmlFor="close-contact" tooltip="The main person to talk to.">Lead Contact</Label><Input id="close-contact" value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
                 </div>
               </div>
             </div>
@@ -783,16 +870,19 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           {/* FOOTER & LINKS */}
           {activeSection === 'footer' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Footer & Links</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Footer & Links</h3>
+                <HelpButton onClick={() => setIsHelpOpen(true)} />
+              </div>
               <div className="grid gap-10">
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700">
-                  <Label htmlFor="footer-addr">Mailing Address (One part per line)</Label>
+                  <Label htmlFor="footer-addr" tooltip="Full mailing address. Use a new line for each part.">Mailing Address (One part per line)</Label>
                   <TextArea id="footer-addr" rows={4} value={data.footer.address.join('\n')} onChange={(v: string) => updateField('footer.address', v.split('\n'))} />
                 </div>
                 <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="footer-name">Contact Name</Label><Input id="footer-name" value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
-                  <div><Label htmlFor="footer-email">Email</Label><Input id="footer-email" value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
-                  <div><Label htmlFor="footer-phone">Phone</Label><Input id="footer-phone" value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
+                  <div><Label htmlFor="footer-name" tooltip="Name of the footer contact.">Contact Name</Label><Input id="footer-name" value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
+                  <div><Label htmlFor="footer-email" tooltip="The primary support email.">Email</Label><Input id="footer-email" value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
+                  <div><Label htmlFor="footer-phone" tooltip="The official contact number.">Phone</Label><Input id="footer-phone" value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
                 </div>
                 <div>
                   <Label>Quick Links</Label>
@@ -829,6 +919,12 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
           </div>
         </div>
       </main>
+
+      <HelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        initialSection={activeSection}
+      />
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
