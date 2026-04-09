@@ -73,6 +73,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const [rawYaml, setRawYaml] = useState('')
   const [yamlError, setYamlError] = useState<string | null>(null)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Sync raw YAML when form data changes
   useEffect(() => {
@@ -195,12 +196,33 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   ]
 
   return (
-    <div className="flex h-screen bg-slate-900 text-white font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-900 text-white font-sans overflow-hidden relative">
+      {/* Sidebar Backdrop (Mobile only) */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-72 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
-        <div className="p-6 border-b border-slate-700">
-          <h2 className="text-xl font-black text-yellow-500 uppercase tracking-tighter italic">Omaha Command</h2>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 italic">USS Omaha SSN-692 Relaunch</p>
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-72 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0
+        transform transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0 shadow-2xl shadow-black/50' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-yellow-500 uppercase tracking-tighter italic">Omaha Command</h2>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 italic">USS Omaha SSN-692 Relaunch</p>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden text-slate-500 hover:text-white text-2xl"
+          >
+            &times;
+          </button>
         </div>
         <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
           {sections.map((group) => (
@@ -210,7 +232,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
                 {group.items.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setActiveSection(item.id)}
+                    onClick={() => {
+                      setActiveSection(item.id)
+                      setIsSidebarOpen(false) // Close sidebar on mobile after selection
+                    }}
                     className={`w-full text-left px-4 py-2.5 rounded-lg transition-all text-sm font-bold uppercase tracking-tight ${
                       activeSection === item.id
                         ? 'bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20'
@@ -245,7 +270,20 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-slate-900 p-8 custom-scrollbar">
+      <main className="flex-1 overflow-y-auto bg-slate-900 p-4 md:p-8 custom-scrollbar">
+        {/* Mobile Header Toggle */}
+        <div className="flex md:hidden items-center justify-between mb-6 bg-slate-800 p-4 rounded-2xl border border-slate-700">
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="text-yellow-500 font-black flex items-center gap-2 text-sm uppercase italic"
+          >
+            <span className="text-xl">☰</span> Menu
+          </button>
+          <div className="text-right">
+            <h2 className="text-xs font-black text-yellow-500 uppercase italic">Omaha Command</h2>
+          </div>
+        </div>
+
         {message && (
           <div className={`mb-8 p-6 rounded-2xl border-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-300 ${
             message.type === 'success' ? 'bg-green-900/30 border-green-500 text-green-200' : 'bg-red-900/30 border-red-500 text-red-200'
