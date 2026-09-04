@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decrypt } from './lib/auth'
+import { updateSession } from './lib/auth'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -13,7 +13,8 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-      await decrypt(session)
+      // Validate the token and keep the persistent cookie fresh.
+      return (await updateSession(request)) ?? NextResponse.next()
     } catch (e) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }

@@ -1,9 +1,5 @@
 import { getSession, login } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
-
-const MAX_ATTEMPTS = 5
-const LOCKOUT_DURATION = 15 * 60 * 1000 // 15 minutes
 
 export default async function AdminLoginPage({
   searchParams,
@@ -20,28 +16,14 @@ export default async function AdminLoginPage({
 
   async function handleLogin(formData: FormData) {
     'use server'
-    
-    const cookieStore = await cookies()
-    const attempts = parseInt(cookieStore.get('login_attempts')?.value || '0')
-    const lastAttempt = parseInt(cookieStore.get('last_attempt')?.value || '0')
-
-    // Simple Rate Limiting: Lockout if too many attempts
-    if (attempts >= MAX_ATTEMPTS && Date.now() - lastAttempt < LOCKOUT_DURATION) {
-      const remainingMinutes = Math.ceil((LOCKOUT_DURATION - (Date.now() - lastAttempt)) / 60000)
-      redirect(`/admin?error=Too many attempts. Try again in ${remainingMinutes} minutes.`)
-    }
 
     const passcode = formData.get('passcode') as string
     const success = await login(passcode)
 
     if (success) {
-      cookieStore.set('login_attempts', '0') // Reset on success
       redirect('/admin/dashboard')
     } else {
-      const newAttempts = attempts + 1
-      cookieStore.set('login_attempts', newAttempts.toString(), { maxAge: 3600 }) // 1 hour expiry
-      cookieStore.set('last_attempt', Date.now().toString(), { maxAge: 3600 })
-      redirect('/admin?error=Invalid passcode')
+      redirect('/admin?error=Incorrect passcode. Check the code and try again.')
     }
   }
 
@@ -62,6 +44,9 @@ export default async function AdminLoginPage({
               className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-4 text-center text-2xl tracking-widest focus:outline-none focus:border-yellow-500 transition-all"
               required
               autoFocus
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
 
@@ -79,7 +64,7 @@ export default async function AdminLoginPage({
 
         <div className="mt-8 text-center">
           <p className="text-slate-500 text-xs">
-            Admin access is restricted to authorized personnel only.
+            Authorized devices stay signed in until you sign out or clear browser data.
           </p>
         </div>
       </div>
