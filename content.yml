@@ -305,7 +305,7 @@ footer:
 navy250:
   logo: /images/logos/navy-250-authentic.png
   heading: 250 Years of Defending Freedom, Protecting Prosperity
-  countdownEnabled: true
+  countdownEnabled: false
   deadline: '2026-05-16T10:00:00'
   deadlineLabel: Armed Forces Day 2026
   deadlineText: Countdown to the Memorial Dedication Ceremony
