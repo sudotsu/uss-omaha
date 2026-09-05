@@ -63,15 +63,17 @@ TextArea.displayName = 'TextArea'
 
 interface AdminDashboardProps {
   initialData: ContentData
+  initialContentSha: string | null
 }
 
-export function AdminDashboard({ initialData }: AdminDashboardProps) {
+export function AdminDashboard({ initialData, initialContentSha }: AdminDashboardProps) {
   const [data, setData] = useState<ContentData>(initialData)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [activeSection, setActiveSection] = useState('metadata')
   const [rawYaml, setRawYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
   const [lastPublishedYaml, setLastPublishedYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
+  const [publishedContentSha, setPublishedContentSha] = useState(initialContentSha)
   const [yamlError, setYamlError] = useState<string | null>(null)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -102,9 +104,10 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     setIsSaving(true)
     setMessage(null)
     try {
-      const result = await saveContent(data)
+      const result = await saveContent(data, publishedContentSha)
       if (result.success) {
         setLastPublishedYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
+        if (result.contentSha) setPublishedContentSha(result.contentSha)
         setMessage({ type: 'success', text: result.message })
       } else {
         setMessage({ type: 'error', text: result.message })
