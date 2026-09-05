@@ -110,12 +110,12 @@ whatYourGiftBuilds:
   subheading: See how your contribution directly impacts the memorial's progress.
 fundraisingProgress:
   raised: 823541
-  goal: 1973144
+  goal: 1997345
   donorCount: 127
   lastGiftTime: 2 hours ago
 budget:
   heading: Budget & Remaining Need
-  totalRemaining: $1,973,144
+  totalRemaining: $1,997,345
   note: Cost Estimates as of July 2025. Total Cost Remaining includes Design & Construction Admin & Contingency Costs.
 locationShift:
   heading: Freedom Park Site
@@ -247,7 +247,7 @@ stakeholders:
       title: Project Program Engineer
     - name: Jay Armstrong
       title: Community Member, USN Vet
-    - name: Lauren Foster
+    - name: Lauren Marie Foster
       title: Omaha Parks & Recreation Board Chair
 close:
   heading: Questions?
