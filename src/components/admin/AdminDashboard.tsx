@@ -270,7 +270,7 @@ export function AdminDashboard({ initialData, initialContentSha }: AdminDashboar
             onClick={handleSave}
             disabled={isSaving || !!yamlError || !hasUnpublishedChanges}
             className={`w-full py-4 rounded-xl font-black text-lg shadow-xl transition-all active:scale-95 uppercase italic tracking-tighter ${
-              isSaving || !hasUnpublishedChanges
+              isSaving || !!yamlError || !hasUnpublishedChanges
                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-500 text-white hover:shadow-green-500/20'
             }`}
