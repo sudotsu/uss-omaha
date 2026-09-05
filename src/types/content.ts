@@ -297,6 +297,7 @@ export interface Logo {
 export interface Navy250 {
   logo: string
   heading: string
+  countdownEnabled?: boolean
   deadline?: string
   deadlineLabel?: string
   deadlineText?: string

@@ -255,11 +255,13 @@ export const HelpModal = ({ isOpen, onClose, initialSection }: HelpModalProps) =
     },
     {
       id: 'navy250',
-      title: 'Navy 250 Assets',
-      description: 'Specific content related to the Navy\'s 250th anniversary.',
+      title: 'Homepage Countdown & Navy 250',
+      description: 'Controls the homepage countdown and the Navy 250 anniversary content.',
       tips: [
-        'Images: A collection of logos or historical photos specifically for the anniversary.',
-        'Deadline: The target date for Navy 250 celebrations.'
+        'Show Countdown: Turn it off to remove the complete countdown from the homepage without losing its settings.',
+        'Event Date and Time: Choose when the countdown reaches zero using the date picker.',
+        'Countdown Heading and Text: Edit the wording shown above and below the timer.',
+        'Images: A collection of logos or historical photos specifically for the anniversary.'
       ]
     },
     {

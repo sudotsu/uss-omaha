@@ -229,6 +229,9 @@ function validateContent(data: ContentData) {
   objectsAt(footer, 'logos', { src: 'string', alt: 'string' }, 'footer.logos')
 
   const navy = objectAt(root, 'navy250')
+  if (navy.countdownEnabled !== undefined && typeof navy.countdownEnabled !== 'boolean') {
+    throw new Error('Cannot publish: navy250.countdownEnabled must be true or false')
+  }
   ;['logo', 'heading', 'subheading', 'subtitle'].forEach((key) => stringAt(navy, key, `navy250.${key}`))
   ;['deadline', 'deadlineLabel', 'deadlineText'].forEach((key) => {
     if (navy[key] !== undefined) stringAt(navy, key, `navy250.${key}`)
