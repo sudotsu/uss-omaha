@@ -1,16 +1,39 @@
 'use server'
 
+import { getSession } from '@/lib/auth'
+import { parseContent, validateContent } from '@/lib/content-schema'
 import { loadContent } from '@/lib/content'
-import { ContentData } from '@/types/content'
+import type { ContentData } from '@/types/content'
 import yaml from 'js-yaml'
 import { Octokit } from 'octokit'
 import { revalidatePath } from 'next/cache'
-import { getSession } from '@/lib/auth'
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
 const TARGET_BRANCH = 'main'
+const CONTENT_PATH = 'content.yml'
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+export type PublishStatus = {
+  state: 'building' | 'live' | 'failed'
+  label: string
+  url?: string
+}
+
+export type RevisionSummary = {
+  sha: string
+  message: string
+  date: string
+  author: string
+  url: string
+}
+
+export type MediaAsset = {
+  path: string
+  publicPath: string
+  name: string
+}
 
 function validateConfig() {
   if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
@@ -18,13 +41,42 @@ function validateConfig() {
   }
 }
 
-// Wrapper to safely load local content
+function getOctokit() {
+  validateConfig()
+  return new Octokit({ auth: GITHUB_TOKEN })
+}
+
 function safeLoadLocalContent(): ContentData {
   try {
     return loadContent()
-  } catch (e) {
-    console.error('CRITICAL: Failed to load local content.yml:', e)
+  } catch (error) {
+    console.error('CRITICAL: Failed to load local content.yml:', error)
     throw new Error('Site content is corrupted or missing.')
+  }
+}
+
+async function requireSession() {
+  const session = await getSession()
+  if (!session) throw new Error('Unauthorized: Please log in again')
+}
+
+async function readPublishedContent(octokit: Octokit) {
+  const { data: fileData } = await octokit.rest.repos.getContent({
+    owner: REPO_OWNER!,
+    repo: REPO_NAME!,
+    path: CONTENT_PATH,
+    ref: TARGET_BRANCH,
+  })
+
+  if (Array.isArray(fileData) || fileData.type !== 'file') {
+    throw new Error('Could not read content.yml from the repository.')
+  }
+
+  const raw = Buffer.from(fileData.content, 'base64').toString('utf8')
+  return {
+    content: parseContent(yaml.load(raw)),
+    raw,
+    sha: fileData.sha,
   }
 }
 
@@ -34,302 +86,304 @@ export async function loadDraftContent(): Promise<{ content: ContentData; sha: s
   }
 
   const octokit = new Octokit({ auth: GITHUB_TOKEN })
-
   try {
-    const { data: fileData } = await octokit.rest.repos.getContent({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      path: 'content.yml',
-      ref: TARGET_BRANCH,
-    })
-
-    if (!Array.isArray(fileData) && fileData.type === 'file') {
-      const content = Buffer.from(fileData.content, 'base64').toString('utf8')
-      return { content: yaml.load(content) as ContentData, sha: fileData.sha }
-    }
-  } catch (e: any) {
-    // Only swallow 404s (branch/file doesn't exist)
-    // If it's a 401 (Auth) or 403 (Rate limit), we want to see it in the logs
-    if (e.status !== 404) {
-       console.error('Error loading draft from GitHub:', e)
-       // We still fall back to local content so the UI doesn't crash
-    }
+    const published = await readPublishedContent(octokit)
+    return { content: published.content, sha: published.sha }
+  } catch (error: any) {
+    if (error?.status !== 404) console.error('Error loading published content from GitHub:', error)
+    return { content: safeLoadLocalContent(), sha: null }
   }
-
-  return { content: safeLoadLocalContent(), sha: null }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function validateContent(data: ContentData) {
-  const root = data as unknown
-  if (!isRecord(root)) throw new Error('Cannot publish: content must be an object')
-
-  const objectAt = (parent: Record<string, unknown>, key: string) => {
-    const value = parent[key]
-    if (!isRecord(value)) throw new Error(`Cannot publish: ${key} must be an object`)
-    return value
-  }
-  const stringAt = (parent: Record<string, unknown>, key: string, path = key) => {
-    if (typeof parent[key] !== 'string') throw new Error(`Cannot publish: ${path} must be text`)
-  }
-  const numberAt = (parent: Record<string, unknown>, key: string, path = key) => {
-    if (typeof parent[key] !== 'number' || !Number.isFinite(parent[key])) {
-      throw new Error(`Cannot publish: ${path} must be a number`)
-    }
-  }
-  const stringsAt = (parent: Record<string, unknown>, key: string, path = key) => {
-    const value = parent[key]
-    if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-      throw new Error(`Cannot publish: ${path} must be a list of text values`)
-    }
-  }
-  const objectsAt = (
-    parent: Record<string, unknown>,
-    key: string,
-    fields: Record<string, 'string' | 'number'>,
-    path = key,
-  ) => {
-    const value = parent[key]
-    if (!Array.isArray(value)) throw new Error(`Cannot publish: ${path} must be a list`)
-    value.forEach((item, index) => {
-      if (!isRecord(item)) throw new Error(`Cannot publish: ${path}[${index}] must be an object`)
-      Object.entries(fields).forEach(([field, type]) => {
-        if (typeof item[field] !== type) {
-          throw new Error(`Cannot publish: ${path}[${index}].${field} must be ${type === 'string' ? 'text' : 'a number'}`)
-        }
-      })
-    })
-  }
-
-  const metadata = objectAt(root, 'metadata')
-  ;['title', 'subtitle', 'year', 'mode'].forEach((key) => stringAt(metadata, key, `metadata.${key}`))
-  if (!['memorial', 'donor'].includes(metadata.mode as string)) throw new Error('Cannot publish: metadata.mode is invalid')
-
-  const hero = objectAt(root, 'hero')
-  ;['heading', 'subheading', 'backgroundImage'].forEach((key) => stringAt(hero, key, `hero.${key}`))
-
-  const mission = objectAt(root, 'mission')
-  ;['heading', 'statement'].forEach((key) => stringAt(mission, key, `mission.${key}`))
-  stringsAt(mission, 'highlights', 'mission.highlights')
-
-  const agenda = objectAt(root, 'agenda')
-  stringAt(agenda, 'heading', 'agenda.heading')
-  objectsAt(agenda, 'items', { title: 'string', description: 'string' }, 'agenda.items')
-
-  const background = objectAt(root, 'background')
-  stringAt(background, 'heading', 'background.heading')
-  stringsAt(background, 'paragraphs', 'background.paragraphs')
-  stringsAt(background, 'keyPoints', 'background.keyPoints')
-  objectsAt(background, 'milestones', { year: 'string', month: 'string', event: 'string' }, 'background.milestones')
-
-  const letters = objectAt(root, 'letters')
-  ;['heading', 'description'].forEach((key) => stringAt(letters, key, `letters.${key}`))
-  objectsAt(letters, 'items', { title: 'string', image: 'string', excerpt: 'string' }, 'letters.items')
-
-  const facts = objectAt(root, 'submarineFacts')
-  ;['heading', 'image'].forEach((key) => stringAt(facts, key, `submarineFacts.${key}`))
-  objectsAt(facts, 'facts', { label: 'string', value: 'string' }, 'submarineFacts.facts')
-
-  const timeline = objectAt(root, 'timeline')
-  stringAt(timeline, 'heading', 'timeline.heading')
-  objectsAt(timeline, 'milestones', { date: 'string', title: 'string', details: 'string' }, 'timeline.milestones')
-
-  const phases = objectAt(root, 'phases')
-  stringAt(phases, 'heading', 'phases.heading')
-  objectsAt(phases, 'phaseList', {
-    number: 'number', title: 'string', description: 'string', status: 'string', cost: 'string', percentComplete: 'number',
-  }, 'phases.phaseList')
-
-  const progress = objectAt(root, 'fundraisingProgress')
-  ;['raised', 'goal', 'donorCount'].forEach((key) => numberAt(progress, key, `fundraisingProgress.${key}`))
-  stringAt(progress, 'lastGiftTime', 'fundraisingProgress.lastGiftTime')
-
-  const budget = objectAt(root, 'budget')
-  ;['heading', 'totalRemaining', 'note'].forEach((key) => stringAt(budget, key, `budget.${key}`))
-
-  const location = objectAt(root, 'locationShift')
-  ;['heading', 'subtitle', 'floodImage', 'floodCaption', 'newLocationHeading', 'newLocationBody', 'mapImage'].forEach(
-    (key) => stringAt(location, key, `locationShift.${key}`),
-  )
-  if (location.mapCaption !== undefined) stringAt(location, 'mapCaption', 'locationShift.mapCaption')
-
-  const sitePlan = objectAt(root, 'sitePlan')
-  ;['heading', 'description', 'detail', 'renderImage'].forEach((key) => stringAt(sitePlan, key, `sitePlan.${key}`))
-
-  const gallery = objectAt(root, 'gallery')
-  stringAt(gallery, 'heading', 'gallery.heading')
-  objectsAt(gallery, 'images', { src: 'string', caption: 'string' }, 'gallery.images')
-
-  const execution = objectAt(root, 'executionPhotos')
-  stringAt(execution, 'heading', 'executionPhotos.heading')
-  objectsAt(execution, 'photos', { src: 'string', caption: 'string', year: 'string' }, 'executionPhotos.photos')
-
-  const whyNow = objectAt(root, 'whyNow')
-  ;['heading', 'tagline'].forEach((key) => stringAt(whyNow, key, `whyNow.${key}`))
-  objectsAt(whyNow, 'projects', { name: 'string', cost: 'string' }, 'whyNow.projects')
-  const memorial = objectAt(whyNow, 'memorial')
-  ;['name', 'cost'].forEach((key) => stringAt(memorial, key, `whyNow.memorial.${key}`))
-
-  const validateCta = (modeName: string) => {
-    const ctaRoot = objectAt(root, 'callToAction')
-    const mode = objectAt(ctaRoot, modeName)
-    ;['heading', 'tagline', 'donationHeading', 'taxNote', 'pledgeFormText', 'pledgeFormUrl'].forEach(
-      (key) => stringAt(mode, key, `callToAction.${modeName}.${key}`),
-    )
-    const primary = objectAt(mode, 'primaryOrg')
-    ;['name', 'ein', 'website', 'email', 'phone'].forEach(
-      (key) => stringAt(primary, key, `callToAction.${modeName}.primaryOrg.${key}`),
-    )
-    const mailing = objectAt(primary, 'mailingAddress')
-    ;['attention', 'address', 'city'].forEach(
-      (key) => stringAt(mailing, key, `callToAction.${modeName}.primaryOrg.mailingAddress.${key}`),
-    )
-    const alternate = objectAt(mode, 'alternateOrg')
-    ;['name', 'ein', 'note'].forEach(
-      (key) => stringAt(alternate, key, `callToAction.${modeName}.alternateOrg.${key}`),
-    )
-    if (mode.trustIndicators !== undefined) stringsAt(mode, 'trustIndicators', `callToAction.${modeName}.trustIndicators`)
-  }
-  validateCta('memorial')
-  validateCta('donor')
-
-  const volunteer = objectAt(root, 'volunteer')
-  ;['heading', 'subheading'].forEach((key) => stringAt(volunteer, key, `volunteer.${key}`))
-  if (volunteer.contact !== undefined) {
-    const contact = objectAt(volunteer, 'contact')
-    stringAt(contact, 'email', 'volunteer.contact.email')
-    if (contact.name !== undefined) stringAt(contact, 'name', 'volunteer.contact.name')
-    if (contact.phone !== undefined) stringAt(contact, 'phone', 'volunteer.contact.phone')
-  }
-  if (volunteer.opportunities !== undefined) stringsAt(volunteer, 'opportunities', 'volunteer.opportunities')
-  if (volunteer.organization !== undefined) stringAt(volunteer, 'organization', 'volunteer.organization')
-  if (volunteer.organizationContact !== undefined) stringAt(volunteer, 'organizationContact', 'volunteer.organizationContact')
-
-  const stakeholders = objectAt(root, 'stakeholders')
-  stringAt(stakeholders, 'heading', 'stakeholders.heading')
-  objectsAt(stakeholders, 'members', { name: 'string', title: 'string' }, 'stakeholders.members')
-
-  const close = objectAt(root, 'close')
-  ;['heading', 'subheading'].forEach((key) => stringAt(close, key, `close.${key}`))
-  const contactInfo = objectAt(close, 'contactInfo')
-  ;['organization', 'website', 'contact'].forEach((key) => stringAt(contactInfo, key, `close.contactInfo.${key}`))
-
-  const presented = objectAt(root, 'presentedBy')
-  stringAt(presented, 'heading', 'presentedBy.heading')
-  objectsAt(presented, 'presenters', { name: 'string', org: 'string', title: 'string' }, 'presentedBy.presenters')
-
-  const footer = objectAt(root, 'footer')
-  stringsAt(footer, 'address', 'footer.address')
-  const footerContact = objectAt(footer, 'contact')
-  ;['name', 'email', 'phone'].forEach((key) => stringAt(footerContact, key, `footer.contact.${key}`))
-  objectsAt(footer, 'quickLinks', { label: 'string', href: 'string' }, 'footer.quickLinks')
-  objectsAt(footer, 'logos', { src: 'string', alt: 'string' }, 'footer.logos')
-
-  const navy = objectAt(root, 'navy250')
-  if (navy.countdownEnabled !== undefined && typeof navy.countdownEnabled !== 'boolean') {
-    throw new Error('Cannot publish: navy250.countdownEnabled must be true or false')
-  }
-  ;['logo', 'heading', 'subheading', 'subtitle'].forEach((key) => stringAt(navy, key, `navy250.${key}`))
-  ;['deadline', 'deadlineLabel', 'deadlineText'].forEach((key) => {
-    if (navy[key] !== undefined) stringAt(navy, key, `navy250.${key}`)
-  })
-  stringsAt(navy, 'images', 'navy250.images')
 }
 
 export async function saveContent(newData: ContentData, expectedSha: string | null) {
-  const session = await getSession()
-  if (!session) {
-    return { success: false, message: 'Unauthorized: Please log in again' }
+  try {
+    await requireSession()
+  } catch (error: any) {
+    return { success: false as const, message: error.message }
   }
 
-  try {
-    validateContent(newData)
-  } catch (error: any) {
-    return { success: false, message: error.message || 'Cannot publish invalid content' }
-  }
+  const validation = validateContent(newData)
+  if (!validation.success) return { success: false as const, message: `Cannot publish: ${validation.message}` }
 
-  try {
-    validateConfig()
-  } catch (error: any) {
+  if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
     if (process.env.NODE_ENV === 'development') {
       try {
         const fs = await import('fs')
         const path = await import('path')
-        const yamlStr = yaml.dump(newData, { indent: 2, lineWidth: -1 })
-        fs.writeFileSync(path.join(process.cwd(), 'content.yml'), yamlStr)
+        const yamlStr = yaml.dump(validation.data, { indent: 2, lineWidth: -1 })
+        fs.writeFileSync(path.join(process.cwd(), CONTENT_PATH), yamlStr)
         revalidatePath('/')
-        return { success: true, message: 'Saved to disk (Dev Mode)' }
-      } catch (e: any) {
-        return { success: false, message: 'Dev Mode Save Failed: ' + e.message }
+        revalidatePath('/print')
+        return { success: true as const, changed: true, message: 'Saved to disk (Dev Mode)', contentSha: expectedSha || undefined }
+      } catch (error: any) {
+        return { success: false as const, message: `Dev Mode Save Failed: ${error.message}` }
       }
     }
-    return { success: false, message: error.message }
+    return { success: false as const, message: 'GitHub configuration is missing.' }
   }
 
   const octokit = new Octokit({ auth: GITHUB_TOKEN })
+  try {
+    const published = await readPublishedContent(octokit)
+
+    if (!expectedSha || published.sha !== expectedSha) {
+      return {
+        success: false as const,
+        stale: true as const,
+        message: 'The live content changed after this editor was opened. Your edits were preserved and can be merged with the latest version.',
+        latestContent: published.content,
+        latestSha: published.sha,
+      }
+    }
+
+    if (JSON.stringify(published.content) === JSON.stringify(validation.data)) {
+      return {
+        success: true as const,
+        changed: false,
+        message: 'Everything is already published.',
+        contentSha: published.sha,
+      }
+    }
+
+    const yamlStr = yaml.dump(validation.data, { indent: 2, lineWidth: -1 })
+    const { data: update } = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: REPO_OWNER!,
+      repo: REPO_NAME!,
+      path: CONTENT_PATH,
+      message: 'Update site content via Admin UI',
+      content: Buffer.from(yamlStr).toString('base64'),
+      sha: published.sha,
+      branch: TARGET_BRANCH,
+    })
+
+    revalidatePath('/')
+    revalidatePath('/print')
+
+    return {
+      success: true as const,
+      changed: true,
+      message: 'Published. Deployment is now being verified.',
+      contentSha: update.content?.sha || published.sha,
+      commitSha: update.commit.sha,
+      commitUrl: update.commit.html_url || undefined,
+    }
+  } catch (error: any) {
+    console.error('GitHub save failed:', error)
+    return { success: false as const, message: error?.message || 'Failed to publish content.' }
+  }
+}
+
+export async function getPublishStatus(commitSha: string): Promise<PublishStatus> {
+  await requireSession()
+  const octokit = getOctokit()
 
   try {
-    // Read the latest published file so concurrent or duplicate saves fail safely
-    let fileData: any
-    try {
-      const response = await octokit.rest.repos.getContent({
+    const [{ data: statuses }, { data: checks }, { data: deployments }] = await Promise.all([
+      octokit.rest.repos.getCombinedStatusForRef({ owner: REPO_OWNER!, repo: REPO_NAME!, ref: commitSha }),
+      octokit.rest.checks.listForRef({ owner: REPO_OWNER!, repo: REPO_NAME!, ref: commitSha, per_page: 100 }),
+      octokit.rest.repos.listDeployments({ owner: REPO_OWNER!, repo: REPO_NAME!, sha: commitSha, per_page: 10 }),
+    ])
+
+    const vercelStatuses = statuses.statuses.filter((status) => status.context.toLowerCase().includes('vercel'))
+    const vercelChecks = checks.check_runs.filter((check) => {
+      const haystack = `${check.name} ${check.app?.name || ''}`.toLowerCase()
+      return haystack.includes('vercel')
+    })
+
+    let deploymentState: string | undefined
+    let deploymentUrl: string | undefined
+    for (const deployment of deployments.slice(0, 5)) {
+      const { data: deploymentStatuses } = await octokit.rest.repos.listDeploymentStatuses({
         owner: REPO_OWNER!,
         repo: REPO_NAME!,
-        path: 'content.yml',
-        ref: TARGET_BRANCH,
+        deployment_id: deployment.id,
+        per_page: 1,
       })
-      fileData = response.data
-    } catch (e: any) {
-      if (e.status === 404) {
-        return { success: false, message: 'Could not find content.yml in the repository.' }
-      }
-      throw e
+      const latest = deploymentStatuses[0]
+      if (!latest) continue
+      deploymentState = latest.state
+      deploymentUrl = latest.environment_url || latest.target_url || undefined
+      if (latest.state === 'success' || ['error', 'failure'].includes(latest.state)) break
     }
 
-    if (!Array.isArray(fileData) && fileData.type === 'file') {
-      if (!expectedSha || fileData.sha !== expectedSha) {
-        return {
-          success: false,
-          message: 'The site changed after this page was opened. Refresh before publishing so nobody else\'s changes are overwritten.',
-        }
-      }
-
-      const sha = fileData.sha
-      const currentYaml = Buffer.from(fileData.content, 'base64').toString('utf8')
-      const yamlStr = yaml.dump(newData, { indent: 2, lineWidth: -1 })
-
-      const currentData = yaml.load(currentYaml)
-      if (JSON.stringify(currentData) === JSON.stringify(newData)) {
-        return { success: true, changed: false, message: 'Everything is already published.' }
-      }
-
-      const { data: update } = await octokit.rest.repos.createOrUpdateFileContents({
-        owner: REPO_OWNER!,
-        repo: REPO_NAME!,
-        path: 'content.yml',
-        message: 'Publish content via Admin Portal',
-        content: Buffer.from(yamlStr).toString('base64'),
-        sha: sha,
-        branch: TARGET_BRANCH,
-      })
-
-      revalidatePath('/')
-
+    const failedStatus = vercelStatuses.find((status) => ['failure', 'error'].includes(status.state))
+    const failedCheck = vercelChecks.find((check) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(check.conclusion || ''))
+    if (failedStatus || failedCheck || (deploymentState && ['error', 'failure'].includes(deploymentState))) {
       return {
-        success: true,
-        changed: true,
-        message: 'Published. The live site is updating now.',
-        commitUrl: update.commit.html_url,
-        contentSha: update.content?.sha ?? null,
+        state: 'failed',
+        label: 'Deployment failed',
+        url: failedStatus?.target_url || failedCheck?.details_url || deploymentUrl,
       }
     }
-    
-    return { success: false, message: 'Invalid file type found in repo' }
-  } catch (error: any) {
-    console.error('GitHub API Error:', error)
-    return { success: false, message: error.message || 'Failed to update GitHub' }
+
+    const successful = vercelStatuses.some((status) => status.state === 'success')
+      || vercelChecks.some((check) => check.conclusion === 'success')
+      || deploymentState === 'success'
+    if (successful) {
+      return {
+        state: 'live',
+        label: 'Live',
+        url: vercelStatuses.find((status) => status.state === 'success')?.target_url
+          || vercelChecks.find((check) => check.conclusion === 'success')?.details_url
+          || deploymentUrl
+          || '/',
+      }
+    }
+
+    const pending = vercelStatuses.some((status) => status.state === 'pending')
+      || vercelChecks.some((check) => check.status !== 'completed')
+      || (deploymentState != null && ['queued', 'pending', 'in_progress'].includes(deploymentState))
+    if (pending || vercelStatuses.length || vercelChecks.length || deployments.length) {
+      return { state: 'building', label: 'Building', url: vercelStatuses[0]?.target_url || vercelChecks[0]?.details_url || deploymentUrl }
+    }
+
+    return { state: 'building', label: 'Published; awaiting deployment signal' }
+  } catch (error) {
+    console.error('Could not read deployment status:', error)
+    return { state: 'building', label: 'Published; deployment status unavailable' }
   }
+}
+
+export async function getContentRevisions(): Promise<RevisionSummary[]> {
+  await requireSession()
+  const octokit = getOctokit()
+  const { data } = await octokit.rest.repos.listCommits({
+    owner: REPO_OWNER!,
+    repo: REPO_NAME!,
+    sha: TARGET_BRANCH,
+    path: CONTENT_PATH,
+    per_page: 12,
+  })
+
+  return data.map((commit) => ({
+    sha: commit.sha,
+    message: commit.commit.message.split('\n')[0],
+    date: commit.commit.committer?.date || commit.commit.author?.date || '',
+    author: commit.commit.author?.name || commit.author?.login || 'Unknown',
+    url: commit.html_url,
+  }))
+}
+
+export async function restoreRevision(commitSha: string, expectedSha: string | null) {
+  try {
+    await requireSession()
+    const octokit = getOctokit()
+    const current = await readPublishedContent(octokit)
+
+    if (!expectedSha || current.sha !== expectedSha) {
+      return {
+        success: false as const,
+        stale: true as const,
+        message: 'The live content changed before the rollback could be applied. Reload revisions and try again.',
+        latestContent: current.content,
+        latestSha: current.sha,
+      }
+    }
+
+    const { data: oldFile } = await octokit.rest.repos.getContent({
+      owner: REPO_OWNER!,
+      repo: REPO_NAME!,
+      path: CONTENT_PATH,
+      ref: commitSha,
+    })
+    if (Array.isArray(oldFile) || oldFile.type !== 'file') throw new Error('Revision content could not be read.')
+
+    const oldRaw = Buffer.from(oldFile.content, 'base64').toString('utf8')
+    const oldContent = parseContent(yaml.load(oldRaw))
+    const yamlStr = yaml.dump(oldContent, { indent: 2, lineWidth: -1 })
+
+    const { data: update } = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: REPO_OWNER!,
+      repo: REPO_NAME!,
+      path: CONTENT_PATH,
+      message: `Restore site content from ${commitSha.slice(0, 7)}`,
+      content: Buffer.from(yamlStr).toString('base64'),
+      sha: current.sha,
+      branch: TARGET_BRANCH,
+    })
+
+    revalidatePath('/')
+    revalidatePath('/print')
+
+    return {
+      success: true as const,
+      content: oldContent,
+      contentSha: update.content?.sha || current.sha,
+      commitSha: update.commit.sha,
+      message: 'Revision restored and published.',
+    }
+  } catch (error: any) {
+    console.error('Rollback failed:', error)
+    return { success: false as const, message: error?.message || 'Rollback failed.' }
+  }
+}
+
+function safeFilename(name: string) {
+  const base = name.split(/[\\/]/).pop() || 'image'
+  return base.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'image'
+}
+
+export async function uploadMedia(formData: FormData) {
+  try {
+    await requireSession()
+    const file = formData.get('file')
+    if (!(file instanceof File)) return { success: false as const, message: 'Choose an image to upload.' }
+    if (file.size <= 0) return { success: false as const, message: 'The selected image is empty.' }
+    if (file.size > MAX_UPLOAD_BYTES) return { success: false as const, message: 'Images must be 8 MB or smaller.' }
+
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+    if (!allowed.has(file.type)) return { success: false as const, message: 'Use JPG, PNG, WebP, or GIF images.' }
+
+    const octokit = getOctokit()
+    const filename = `${Date.now()}-${safeFilename(file.name)}`
+    const repoPath = `public/images/uploads/${filename}`
+    const bytes = Buffer.from(await file.arrayBuffer())
+
+    const { data: update } = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: REPO_OWNER!,
+      repo: REPO_NAME!,
+      path: repoPath,
+      message: `Upload admin media: ${filename}`,
+      content: bytes.toString('base64'),
+      branch: TARGET_BRANCH,
+    })
+
+    return {
+      success: true as const,
+      message: 'Image uploaded.',
+      path: `/images/uploads/${filename}`,
+      commitSha: update.commit.sha,
+    }
+  } catch (error: any) {
+    console.error('Media upload failed:', error)
+    return { success: false as const, message: error?.message || 'Image upload failed.' }
+  }
+}
+
+export async function listMediaAssets(): Promise<MediaAsset[]> {
+  await requireSession()
+  const octokit = getOctokit()
+
+  const { data: commit } = await octokit.rest.repos.getCommit({
+    owner: REPO_OWNER!,
+    repo: REPO_NAME!,
+    ref: TARGET_BRANCH,
+  })
+  const treeSha = commit.commit.tree.sha
+  const { data: tree } = await octokit.rest.git.getTree({
+    owner: REPO_OWNER!,
+    repo: REPO_NAME!,
+    tree_sha: treeSha,
+    recursive: 'true',
+  })
+
+  return tree.tree
+    .filter((item) => item.type === 'blob' && !!item.path && /^public\/images\//.test(item.path) && /\.(png|jpe?g|webp|gif)$/i.test(item.path))
+    .map((item) => ({
+      path: item.path!,
+      publicPath: item.path!.replace(/^public/, ''),
+      name: item.path!.split('/').pop() || item.path!,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 300)
 }

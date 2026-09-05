@@ -1,1024 +1,485 @@
 'use client'
 
-import { saveContent } from '@/app/admin/actions'
+import {
+  getContentRevisions,
+  getPublishStatus,
+  listMediaAssets,
+  restoreRevision,
+  saveContent,
+  uploadMedia,
+  type MediaAsset,
+  type PublishStatus,
+  type RevisionSummary,
+} from '@/app/admin/actions'
 import { logout } from '@/app/admin/logout-action'
-import { ContentData } from '@/types/content'
-import { useState, useEffect, memo } from 'react'
+import { validateContent } from '@/lib/content-schema'
+import { mergeContentChanges } from '@/lib/content-merge'
+import type { ContentData } from '@/types/content'
 import yaml from 'js-yaml'
-import { Tooltip, HelpModal } from './HelpSystem'
-
-// --- UI HELPER COMPONENTS ---
-
-const Label = memo(({ children, htmlFor, tooltip }: { children: React.ReactNode; htmlFor?: string; tooltip?: string }) => (
-  <div className="flex items-center gap-2 mb-3">
-    <label 
-      htmlFor={htmlFor}
-      className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block"
-    >
-      {children}
-    </label>
-    {tooltip && (
-      <Tooltip content={tooltip}>
-        <span className="cursor-help w-4 h-4 rounded-full bg-slate-800 text-slate-500 text-[8px] flex items-center justify-center border border-slate-700 hover:border-yellow-500 transition-colors font-black italic">
-          ?
-        </span>
-      </Tooltip>
-    )}
-  </div>
-))
-Label.displayName = 'Label'
-
-const HelpButton = ({ onClick }: { onClick: () => void }) => (
-  <button 
-    onClick={onClick}
-    className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-yellow-500 hover:border-yellow-500 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 italic"
-  >
-    <span className="text-yellow-500">?</span> Help Guide
-  </button>
-)
-
-const Input = memo(({ value, onChange, type = "text", ...rest }: any) => (
-  <input 
-    type={type} 
-    value={value} 
-    onChange={(e) => onChange(e.target.value)} 
-    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
-    {...rest}
-  />
-))
-Input.displayName = 'Input'
-
-const TextArea = memo(({ value, onChange, rows = 3, ...rest }: any) => (
-  <textarea 
-    rows={rows} 
-    value={value} 
-    onChange={(e) => onChange(e.target.value)} 
-    className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none transition-all" 
-    {...rest}
-  />
-))
-TextArea.displayName = 'TextArea'
-
-// --- MAIN COMPONENT ---
+import { useEffect, useMemo, useState } from 'react'
+import { ContentEditor, type JsonValue } from './ContentEditor'
+import { HelpModal } from './HelpSystem'
 
 interface AdminDashboardProps {
   initialData: ContentData
   initialContentSha: string | null
 }
 
+type Message = { type: 'success' | 'error' | 'info'; text: string }
+type PublishState = 'idle' | 'publishing' | 'building' | 'live' | 'failed'
+
+const SECTION_GROUPS: Array<{ group: string; items: Array<[string, string]> }> = [
+  {
+    group: 'General',
+    items: [
+      ['metadata', 'Site Identity'],
+      ['hero', 'Hero Section'],
+      ['mission', 'Mission'],
+      ['agenda', 'Meeting Agenda'],
+      ['footer', 'Footer & Links'],
+    ],
+  },
+  {
+    group: 'Historical Content',
+    items: [
+      ['background', 'Background Info'],
+      ['timeline', 'Ship History'],
+      ['submarineFacts', 'Submarine Facts'],
+      ['letters', 'Support Letters'],
+    ],
+  },
+  {
+    group: 'The Project',
+    items: [
+      ['phases', 'Project Phases'],
+      ['whatYourGiftBuilds', 'What Your Gift Builds'],
+      ['budget', 'Budget & Need'],
+      ['locationShift', 'Site Selection'],
+      ['sitePlan', 'Site Plan'],
+    ],
+  },
+  {
+    group: 'Media',
+    items: [
+      ['gallery', 'Image Gallery'],
+      ['executionPhotos', 'Execution Photos'],
+      ['navy250', 'Countdown & Navy 250'],
+    ],
+  },
+  {
+    group: 'Engagement',
+    items: [
+      ['fundraisingProgress', 'Fundraising Stats'],
+      ['whyNow', 'Why Now?'],
+      ['callToAction', 'Donation Info'],
+      ['volunteer', 'Volunteer Info'],
+      ['stakeholders', 'Action Committee'],
+      ['presentedBy', 'Presenters'],
+      ['close', 'Closing Screen'],
+    ],
+  },
+  {
+    group: 'Advanced',
+    items: [['godmode', 'God Mode (Raw YAML)']],
+  },
+]
+
+const SECTION_LABELS = Object.fromEntries(SECTION_GROUPS.flatMap((group) => group.items)) as Record<string, string>
+
+function clonePath(root: unknown, path: string, value: unknown): ContentData {
+  const keys = path.split('.').map((key) => (/^\d+$/.test(key) ? Number(key) : key))
+  const cloneContainer = (input: any) => Array.isArray(input) ? [...input] : { ...input }
+  const nextRoot: any = cloneContainer(root)
+  let previous: any = root
+  let next: any = nextRoot
+
+  for (let index = 0; index < keys.length - 1; index += 1) {
+    const key = keys[index] as any
+    const previousChild = previous?.[key]
+    const nextChild = cloneContainer(previousChild ?? (typeof keys[index + 1] === 'number' ? [] : {}))
+    next[key] = nextChild
+    previous = previousChild
+    next = nextChild
+  }
+
+  next[keys[keys.length - 1] as any] = value
+  return nextRoot as ContentData
+}
+
+function statusClasses(state: PublishState) {
+  if (state === 'live') return 'border-green-500/40 bg-green-500/10 text-green-300'
+  if (state === 'failed') return 'border-red-500/40 bg-red-500/10 text-red-300'
+  if (state === 'publishing' || state === 'building') return 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300'
+  return 'border-slate-700 bg-slate-800 text-slate-400'
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export function AdminDashboard({ initialData, initialContentSha }: AdminDashboardProps) {
   const [data, setData] = useState<ContentData>(initialData)
-  const [isSaving, setIsSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [activeSection, setActiveSection] = useState('metadata')
-  const [rawYaml, setRawYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
-  const [lastPublishedYaml, setLastPublishedYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
+  const [lastPublishedData, setLastPublishedData] = useState<ContentData>(initialData)
   const [publishedContentSha, setPublishedContentSha] = useState(initialContentSha)
+  const [activeSection, setActiveSection] = useState<string>('metadata')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [message, setMessage] = useState<Message | null>(null)
+  const [publishState, setPublishState] = useState<PublishState>('idle')
+  const [publishDetails, setPublishDetails] = useState<PublishStatus | null>(null)
+  const [rawYaml, setRawYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
   const [yamlError, setYamlError] = useState<string | null>(null)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const hasUnpublishedChanges = rawYaml !== lastPublishedYaml
+  const [showRevisions, setShowRevisions] = useState(false)
+  const [revisions, setRevisions] = useState<RevisionSummary[]>([])
+  const [loadingRevisions, setLoadingRevisions] = useState(false)
+  const [restoringSha, setRestoringSha] = useState<string | null>(null)
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([])
+  const [uploadingPath, setUploadingPath] = useState<string | null>(null)
 
-  // Warn before closing or refreshing with unpublished edits.
+  const canPublish = isDirty && !isSaving && !yamlError
+  const activeLabel = SECTION_LABELS[activeSection] || 'Content'
+
   useEffect(() => {
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
-      if (!hasUnpublishedChanges) return
+      if (!isDirty) return
       event.preventDefault()
     }
     window.addEventListener('beforeunload', warnBeforeLeaving)
     return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
-  }, [hasUnpublishedChanges])
+  }, [isDirty])
 
-  // Sync raw YAML when form data changes
   useEffect(() => {
-    try {
-      const dump = yaml.dump(data, { indent: 2, lineWidth: -1 })
-      setRawYaml(dump)
+    listMediaAssets().then(setMediaAssets).catch((error) => console.error('Media library failed to load:', error))
+  }, [])
+
+  const sectionValue = useMemo(() => {
+    if (activeSection === 'godmode') return null
+    return (data as unknown as Record<string, JsonValue>)[activeSection]
+  }, [activeSection, data])
+
+  const selectSection = (id: string) => {
+    if (id === 'godmode') {
+      setRawYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
       setYamlError(null)
-    } catch (e) {
-      console.error('Failed to stringify data for raw editor', e)
     }
-  }, [data])
+    setActiveSection(id)
+    setIsSidebarOpen(false)
+  }
+
+  const updateField = (path: string, value: JsonValue) => {
+    setData((current) => clonePath(current, path, value))
+    setIsDirty(true)
+    setMessage(null)
+    if (publishState === 'live') setPublishState('idle')
+  }
+
+  const refreshMedia = async () => {
+    try {
+      setMediaAssets(await listMediaAssets())
+    } catch (error) {
+      console.error('Failed to refresh media library:', error)
+    }
+  }
+
+  const handleUpload = async (file: File, path: string) => {
+    setUploadingPath(path)
+    setMessage(null)
+    try {
+      const form = new FormData()
+      form.set('file', file)
+      const result = await uploadMedia(form)
+      if (!result.success) {
+        setMessage({ type: 'error', text: result.message })
+        return
+      }
+      updateField(path, result.path)
+      setMessage({ type: 'success', text: 'Image uploaded and selected. Publish Changes to make the content update live.' })
+      await refreshMedia()
+    } catch {
+      setMessage({ type: 'error', text: 'Image upload failed.' })
+    } finally {
+      setUploadingPath(null)
+    }
+  }
+
+  const trackDeployment = async (commitSha: string) => {
+    setPublishState('building')
+    setPublishDetails({ state: 'building', label: 'Building' })
+
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      try {
+        const status = await getPublishStatus(commitSha)
+        setPublishDetails(status)
+        setPublishState(status.state)
+        if (status.state === 'live' || status.state === 'failed') return
+      } catch (error) {
+        console.error('Deployment status check failed:', error)
+      }
+      await delay(5000)
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
+    setPublishState('publishing')
+    setPublishDetails({ state: 'building', label: 'Publishing' })
     setMessage(null)
+
     try {
       const result = await saveContent(data, publishedContentSha)
-      if (result.success) {
-        setLastPublishedYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
-        if (result.contentSha) setPublishedContentSha(result.contentSha)
-        setMessage({ type: 'success', text: result.message })
-      } else {
-        setMessage({ type: 'error', text: result.message })
+
+      if (!result.success && 'stale' in result && result.stale && result.latestContent && result.latestSha) {
+        const { merged, conflicts } = mergeContentChanges(lastPublishedData, data, result.latestContent)
+        setData(merged)
+        setLastPublishedData(result.latestContent)
+        setPublishedContentSha(result.latestSha)
+        setIsDirty(true)
+        setPublishState('idle')
+        setPublishDetails(null)
+        setMessage({
+          type: 'info',
+          text: conflicts.length
+            ? `Someone else published first. Their changes were merged with yours; ${conflicts.length} overlapping field${conflicts.length === 1 ? '' : 's'} kept your version. Review and publish again.`
+            : 'Someone else published first. Their changes were merged with yours and your edits were preserved. Publish again when ready.',
+        })
+        return
       }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'An unexpected error occurred' })
+
+      if (!result.success) {
+        setPublishState('failed')
+        setPublishDetails({ state: 'failed', label: 'Publish failed' })
+        setMessage({ type: 'error', text: result.message })
+        return
+      }
+
+      setLastPublishedData(data)
+      if (result.contentSha) setPublishedContentSha(result.contentSha)
+      setIsDirty(false)
+      setMessage({ type: 'success', text: result.message })
+
+      if (result.commitSha) {
+        void trackDeployment(result.commitSha)
+      } else {
+        setPublishState('live')
+        setPublishDetails({ state: 'live', label: result.changed === false ? 'Already live' : 'Saved' })
+      }
+    } catch {
+      setPublishState('failed')
+      setPublishDetails({ state: 'failed', label: 'Publish failed' })
+      setMessage({ type: 'error', text: 'An unexpected publishing error occurred.' })
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Defensive update helper
-  const updateField = (path: string, value: any) => {
-    setData((prev) => {
-      const newData = JSON.parse(JSON.stringify(prev))
-      const keys = path.split('.')
-      let current = newData
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i]
-        // Ensure path exists
-        if (current[key] === undefined) {
-          // Guess if it should be an array or object based on next key
-          const nextKey = keys[i + 1]
-          current[key] = isNaN(parseInt(nextKey)) ? {} : []
-        }
-        current = current[key]
-      }
-      current[keys[keys.length - 1]] = value
-      return newData
-    })
-  }
-
   const handleRawYamlChange = (value: string) => {
     setRawYaml(value)
     try {
-      const parsed = yaml.load(value) as any
-      
-      // Structural validation
-      const requiredSections = [
-        'metadata', 'hero', 'mission', 'agenda', 'background', 
-        'letters', 'submarineFacts', 'timeline', 'phases', 
-        'fundraisingProgress', 'budget', 'locationShift', 
-        'sitePlan', 'gallery', 'executionPhotos', 'whyNow', 
-        'callToAction', 'volunteer', 'stakeholders', 'close', 
-        'presentedBy', 'footer', 'navy250'
-      ]
-      
-      const missing = requiredSections.filter(key => !parsed || !parsed[key])
-      if (missing.length > 0) {
-        throw new Error(`Invalid Structure: Missing sections [${missing.join(', ')}]`)
-      }
-
-      // Basic type validation for lists
-      if (!Array.isArray(parsed.agenda.items)) throw new Error('agenda.items must be an array')
-      if (!Array.isArray(parsed.phases.phaseList)) throw new Error('phases.phaseList must be an array')
-      if (!Array.isArray(parsed.gallery.images)) throw new Error('gallery.images must be an array')
-
-      setData(parsed as ContentData)
+      const parsed = yaml.load(value)
+      const validation = validateContent(parsed)
+      if (!validation.success) throw new Error(validation.message)
+      setData(validation.data)
       setYamlError(null)
-    } catch (e: any) {
-      setYamlError(e.message || 'Invalid YAML format')
+      setIsDirty(JSON.stringify(validation.data) !== JSON.stringify(lastPublishedData))
+    } catch (error: any) {
+      setYamlError(error?.message || 'Invalid YAML')
     }
   }
 
-  const sections = [
-    { group: 'General', items: [
-      { id: 'metadata', label: 'Site Identity' },
-      { id: 'hero', label: 'Hero Section' },
-      { id: 'mission', label: 'Mission' },
-      { id: 'agenda', label: 'Meeting Agenda' },
-      { id: 'footer', label: 'Footer & Links' },
-    ]},
-    { group: 'Historical Content', items: [
-      { id: 'background', label: 'Background Info' },
-      { id: 'timeline', label: 'Ship History' },
-      { id: 'submarineFacts', label: 'Submarine Facts' },
-      { id: 'letters', label: 'Support Letters' },
-    ]},
-    { group: 'The Project', items: [
-      { id: 'phases', label: 'Project Phases' },
-      { id: 'budget', label: 'Budget & Need' },
-      { id: 'locationShift', label: 'Site Selection' },
-      { id: 'sitePlan', label: 'Site Plan' },
-    ]},
-    { group: 'Media', items: [
-      { id: 'gallery', label: 'Image Gallery' },
-      { id: 'executionPhotos', label: 'Execution Photos' },
-      { id: 'navy250', label: 'Countdown & Navy 250' },
-    ]},
-    { group: 'Engagement', items: [
-      { id: 'fundraising', label: 'Fundraising Stats' },
-      { id: 'whyNow', label: 'Why Now?' },
-      { id: 'callToAction', label: 'Donation Info' },
-      { id: 'volunteer', label: 'Volunteer Info' },
-      { id: 'stakeholders', label: 'Action Committee' },
-      { id: 'presentedBy', label: 'Presenters' },
-      { id: 'close', label: 'Closing Screen' },
-    ]},
-    { group: 'Advanced', items: [
-      { id: 'godmode', label: '⚡ GOD MODE (Raw Code)' },
-    ]}
-  ]
+  const toggleRevisions = async () => {
+    const next = !showRevisions
+    setShowRevisions(next)
+    if (!next || revisions.length) return
+
+    setLoadingRevisions(true)
+    try {
+      setRevisions(await getContentRevisions())
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'Could not load revision history.' })
+    } finally {
+      setLoadingRevisions(false)
+    }
+  }
+
+  const handleRestore = async (revision: RevisionSummary) => {
+    if (!window.confirm(`Restore the site content from “${revision.message}”? This creates a new rollback commit; it does not erase history.`)) return
+
+    setRestoringSha(revision.sha)
+    setMessage(null)
+    try {
+      const result = await restoreRevision(revision.sha, publishedContentSha)
+      if (!result.success) {
+        setMessage({ type: 'error', text: result.message })
+        return
+      }
+      setData(result.content)
+      setLastPublishedData(result.content)
+      setPublishedContentSha(result.contentSha)
+      setIsDirty(false)
+      setRawYaml(yaml.dump(result.content, { indent: 2, lineWidth: -1 }))
+      setMessage({ type: 'success', text: result.message })
+      setRevisions(await getContentRevisions())
+      if (result.commitSha) void trackDeployment(result.commitSha)
+    } finally {
+      setRestoringSha(null)
+    }
+  }
 
   return (
-    <div className="flex h-screen bg-slate-900 text-white font-sans overflow-hidden relative">
-      {/* Sidebar Backdrop (Mobile only) */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300" 
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+    <div className="flex h-screen overflow-hidden bg-slate-950 text-white">
+      {isSidebarOpen && <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-      {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0
-        transform transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0 shadow-2xl shadow-black/50' : '-translate-x-full md:translate-x-0'}
-      `}>
-        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-black text-yellow-500 uppercase tracking-tighter italic">Omaha Command</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 italic">USS Omaha SSN-692 Relaunch</p>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900 transition-transform md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="border-b border-slate-800 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-lg font-bold text-yellow-400">Omaha Command</h1>
+              <p className="mt-1 text-xs text-slate-500">USS Omaha SSN-692 CMS</p>
+            </div>
+            <button type="button" onClick={() => setIsSidebarOpen(false)} className="text-xl text-slate-500 md:hidden" aria-label="Close menu">×</button>
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-slate-500 hover:text-white text-2xl"
-          >
-            &times;
-          </button>
+          <div className={`mt-3 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClasses(publishState)}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${publishState === 'live' ? 'bg-green-400' : publishState === 'failed' ? 'bg-red-400' : publishState === 'idle' ? 'bg-slate-500' : 'bg-yellow-400'}`} />
+            {publishDetails?.label || (isDirty ? 'Unpublished edits' : 'Published')}
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-          {sections.map((group) => (
-            <div key={group.group} className="mb-6">
-              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-4">{group.group}</h4>
-              <div className="space-y-1">
-                {group.items.map((item) => (
+
+        <nav className="flex-1 overflow-y-auto p-3">
+          {SECTION_GROUPS.map((group) => (
+            <div key={group.group} className="mb-5">
+              <h2 className="mb-1 px-2 text-xs font-semibold text-slate-500">{group.group}</h2>
+              <div className="space-y-0.5">
+                {group.items.map(([id, label]) => (
                   <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveSection(item.id)
-                      setIsSidebarOpen(false) // Close sidebar on mobile after selection
-                    }}
-                    className={`w-full text-left px-4 py-2.5 rounded-lg transition-all text-sm font-bold uppercase tracking-tight ${
-                      activeSection === item.id
-                        ? 'bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/20'
-                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                    }`}
+                    key={id}
+                    type="button"
+                    onClick={() => selectSection(id)}
+                    className={`w-full rounded-lg px-2.5 py-2 text-left text-sm transition ${activeSection === id ? 'bg-yellow-400 text-slate-950 font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
                   >
-                    {item.label}
+                    {label}
                   </button>
                 ))}
               </div>
             </div>
           ))}
         </nav>
-        <div className="p-6 bg-slate-800/50 border-t border-slate-700 space-y-3">
-           <button
+
+        <div className="space-y-2 border-t border-slate-800 p-3">
+          <button type="button" onClick={toggleRevisions} className="w-full rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-white">
+            Revision history
+          </button>
+          <button
+            type="button"
             onClick={handleSave}
-            disabled={isSaving || !!yamlError || !hasUnpublishedChanges}
-            className={`w-full py-4 rounded-xl font-black text-lg shadow-xl transition-all active:scale-95 uppercase italic tracking-tighter ${
-              isSaving || !!yamlError || !hasUnpublishedChanges
-                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-500 text-white hover:shadow-green-500/20'
-            }`}
+            disabled={!canPublish}
+            className={`w-full rounded-lg px-3 py-3 text-sm font-bold transition ${canPublish ? 'bg-green-600 text-white hover:bg-green-500' : 'cursor-not-allowed bg-slate-800 text-slate-500'}`}
           >
-            {isSaving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Published'}
+            {isSaving ? 'Publishing…' : isDirty ? 'Publish Changes' : 'Published'}
           </button>
           <form action={logout}>
-            <button type="submit" className="w-full py-2 text-slate-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest transition-colors">
-              Abort Session (Sign Out)
-            </button>
+            <button type="submit" className="w-full px-3 py-2 text-xs text-slate-500 hover:text-red-400">Sign out</button>
           </form>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-slate-900 p-4 md:p-8 custom-scrollbar">
-        {/* Mobile Header Toggle */}
-        <div className="flex md:hidden items-center justify-between mb-6 bg-slate-800 p-4 rounded-2xl border border-slate-700">
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="text-yellow-500 font-black flex items-center gap-2 text-sm uppercase italic"
-          >
-            <span className="text-xl">☰</span> Menu
-          </button>
-          <div className="text-right">
-            <h2 className="text-xs font-black text-yellow-500 uppercase italic">Omaha Command</h2>
+      <main className="flex-1 overflow-y-auto bg-slate-950 pb-24 md:pb-8">
+        <div className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={() => setIsSidebarOpen(true)} className="rounded-lg border border-slate-700 px-2.5 py-2 text-sm text-yellow-400 md:hidden" aria-label="Open menu">☰</button>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold">{activeLabel}</h2>
+              <p className="truncate text-xs text-slate-500">{isDirty ? 'Changes not published yet' : 'Matches published content'}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" onClick={() => setIsHelpOpen(true)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-yellow-500 hover:text-yellow-400">Help</button>
+            <a href="/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white">View site</a>
           </div>
         </div>
 
-        {message && (
-          <div className={`mb-8 p-6 rounded-2xl border-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-300 ${
-            message.type === 'success' ? 'bg-green-900/30 border-green-500 text-green-200' : 'bg-red-900/30 border-red-500 text-red-200'
-          }`}>
-            <div className="flex-1">
-              <span className="font-bold text-lg block">{message.text}</span>
-              {message.type === 'success' && (
-                <p className="text-sm mt-1 opacity-80 italic">Vercel usually updates the live site within one or two minutes.</p>
-              )}
+        <div className="mx-auto max-w-5xl space-y-5 p-4 md:p-6">
+          {message && (
+            <div className={`flex items-start justify-between gap-4 rounded-xl border p-4 text-sm ${message.type === 'error' ? 'border-red-500/40 bg-red-500/10 text-red-200' : message.type === 'success' ? 'border-green-500/40 bg-green-500/10 text-green-200' : 'border-blue-500/40 bg-blue-500/10 text-blue-200'}`}>
+              <span>{message.text}</span>
+              <button type="button" onClick={() => setMessage(null)} className="shrink-0 opacity-60 hover:opacity-100" aria-label="Dismiss message">×</button>
             </div>
-            <div className="flex gap-3 w-full md:w-auto">
-              {message.type === 'success' && (
-                <a href="/" target="_blank" rel="noopener noreferrer" className="bg-white text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-yellow-500 transition-all text-center flex-1 md:flex-none italic">
-                  View Live Site
-                </a>
-              )}
-              <button onClick={() => setMessage(null)} className="text-xl opacity-50 hover:opacity-100 px-2" aria-label="Dismiss message">&times;</button>
-            </div>
-          </div>
-        )}
+          )}
 
-        <div className="max-w-4xl mx-auto pb-20">
-          
-          {/* GOD MODE */}
-          {activeSection === 'godmode' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white">⚡ God Mode</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
+          {showRevisions && (
+            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 md:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold">Revision history</h3>
+                  <p className="mt-1 text-xs text-slate-500">Restore an earlier content.yml as a new commit. Nothing is deleted from Git history.</p>
+                </div>
+                <button type="button" onClick={() => setShowRevisions(false)} className="text-slate-500 hover:text-white" aria-label="Close revision history">×</button>
               </div>
-              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Full YAML Control • Syntax Validated</p>
-              <textarea 
-                id="raw-yaml-editor"
-                aria-label="Raw YAML Editor"
-                value={rawYaml} 
-                onChange={(e) => handleRawYamlChange(e.target.value)} 
-                className={`w-full h-[60vh] bg-black text-green-400 font-mono p-6 rounded-2xl border-2 focus:outline-none transition-all leading-relaxed ${yamlError ? 'border-red-500 shadow-red-500/10' : 'border-slate-800 focus:border-yellow-500'}`} 
+              {loadingRevisions ? <p className="text-sm text-slate-500">Loading revisions…</p> : (
+                <div className="divide-y divide-slate-800">
+                  {revisions.map((revision) => (
+                    <div key={revision.sha} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-200">{revision.message}</p>
+                        <p className="mt-1 text-xs text-slate-500">{revision.date ? new Date(revision.date).toLocaleString() : 'Unknown date'} · {revision.author} · {revision.sha.slice(0, 7)}</p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <a href={revision.url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-400 hover:text-white">Commit</a>
+                        <button type="button" onClick={() => handleRestore(revision)} disabled={!!restoringSha} className="rounded-lg border border-yellow-500/40 px-3 py-2 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10 disabled:opacity-40">
+                          {restoringSha === revision.sha ? 'Restoring…' : 'Restore'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'godmode' ? (
+            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 md:p-5">
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold">Raw YAML</h3>
+                <p className="mt-1 text-sm text-slate-500">Uses the same shared schema as the visual editor and server publish path.</p>
+              </div>
+              <textarea
+                aria-label="Raw YAML editor"
+                value={rawYaml}
+                onChange={(event) => handleRawYamlChange(event.target.value)}
+                className={`h-[65vh] w-full resize-y rounded-xl border bg-black p-4 font-mono text-sm leading-relaxed text-green-300 outline-none ${yamlError ? 'border-red-500' : 'border-slate-700 focus:border-yellow-500'}`}
               />
-              {yamlError && <div className="bg-red-900 text-red-100 p-4 rounded-xl text-xs font-mono border border-red-500 animate-in fade-in">{yamlError}</div>}
-            </div>
-          )}
-
-          {/* SITE IDENTITY */}
-          {activeSection === 'metadata' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Identity</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="meta-title" tooltip="The main name of your website shown in browser tabs.">Site Title</Label><Input id="meta-title" value={data.metadata.title} onChange={(v: string) => updateField('metadata.title', v)} /></div>
-                <div><Label htmlFor="meta-subtitle" tooltip="A short tagline that appears near the title.">Subtitle</Label><Input id="meta-subtitle" value={data.metadata.subtitle} onChange={(v: string) => updateField('metadata.subtitle', v)} /></div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div><Label htmlFor="meta-year" tooltip="The current operational year of the project.">Year</Label><Input id="meta-year" value={data.metadata.year} onChange={(v: string) => updateField('metadata.year', v)} /></div>
-                  <div>
-                    <Label htmlFor="meta-mode" tooltip="Memorial: Standard view. Donor: Focuses on fundraising goals.">Mode</Label>
-                    <select id="meta-mode" value={data.metadata.mode} onChange={(e) => updateField('metadata.mode', e.target.value)} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg font-bold focus:border-yellow-500 outline-none appearance-none">
-                      <option value="memorial">Memorial</option>
-                      <option value="donor">Donor</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* HERO */}
-          {activeSection === 'hero' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Hero Section</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="hero-heading" tooltip="Main title at the very top. Use bold, clear language.">Main Heading</Label><TextArea id="hero-heading" rows={3} value={data.hero.heading} onChange={(v: string) => updateField('hero.heading', v)} /></div>
-                <div><Label htmlFor="hero-sub" tooltip="Smaller text that appears under the main heading.">Subheading</Label><Input id="hero-sub" value={data.hero.subheading} onChange={(v: string) => updateField('hero.subheading', v)} /></div>
-                <div><Label htmlFor="hero-bg" tooltip="The file location of your background image (e.g., /images/hero.jpg).">Background Image Path</Label><Input id="hero-bg" value={data.hero.backgroundImage} onChange={(v: string) => updateField('hero.backgroundImage', v)} /></div>
-              </div>
-            </div>
-          )}
-
-          {/* MISSION */}
-          {activeSection === 'mission' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Mission</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="mission-heading" tooltip="The title for your mission section.">Heading</Label><Input id="mission-heading" value={data.mission.heading} onChange={(v: string) => updateField('mission.heading', v)} /></div>
-                <div><Label htmlFor="mission-statement" tooltip="The core reason for this project. Keep it inspiring.">Statement</Label><TextArea id="mission-statement" rows={5} value={data.mission.statement} onChange={(v: string) => updateField('mission.statement', v)} /></div>
-                <div><Label htmlFor="mission-highlights" tooltip="List key points separated by commas (e.g., Honor, Legacy, Education).">Highlights (Comma separated)</Label><Input id="mission-highlights" value={data.mission.highlights.join(', ')} onChange={(v: string) => updateField('mission.highlights', v.split(',').map(s => s.trim()))} /></div>
-              </div>
-            </div>
-          )}
-
-          {/* AGENDA */}
-          {activeSection === 'agenda' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-end">
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-4xl font-black italic uppercase tracking-tighter">Agenda</h3>
-                    <HelpButton onClick={() => setIsHelpOpen(true)} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <button onClick={() => updateField('agenda.items', [...data.agenda.items, { title: 'New Item', description: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Step</button>
-              </div>
-              <div className="space-y-4">
-                {data.agenda.items.map((item, i) => (
-                  <div key={i} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex gap-4">
-                    <div className="flex-1 grid gap-4">
-                      <Input aria-label={`Agenda item ${i+1} title`} value={item.title} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].title = v; updateField('agenda.items', next); }} />
-                      <Input aria-label={`Agenda item ${i+1} description`} value={item.description} onChange={(v: string) => { const next = [...data.agenda.items]; next[i].description = v; updateField('agenda.items', next); }} placeholder="Description" />
-                    </div>
-                    <button 
-                      onClick={() => updateField('agenda.items', data.agenda.items.filter((_, idx) => idx !== i))} 
-                      className="text-red-500 font-black text-xl px-2"
-                      aria-label={`Remove agenda item ${i + 1}`}
-                      title="Remove Item"
-                    >&times;</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* BACKGROUND */}
-          {activeSection === 'background' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Background Info</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="bg-heading" tooltip="Main title for the historical context section.">Heading</Label><Input id="bg-heading" value={data.background.heading} onChange={(v: string) => updateField('background.heading', v)} /></div>
-                <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label htmlFor="bg-paragraphs" tooltip="Long-form narrative about the project's origins. Use double line breaks.">Main Paragraphs (One per line)</Label>
-                  <TextArea id="bg-paragraphs" rows={6} value={data.background.paragraphs.join('\n\n')} onChange={(v: string) => updateField('background.paragraphs', v.split('\n\n').filter(p => p.trim()))} />
-                </div>
-                <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
-                  <Label htmlFor="bg-points" tooltip="Bullet-style highlights for quick scanning.">Key Points (Comma separated)</Label>
-                  <Input id="bg-points" value={data.background.keyPoints.join(', ')} onChange={(v: string) => updateField('background.keyPoints', v.split(',').map(s => s.trim()))} />
-                </div>
-                <div>
-                  <Label tooltip="Chronological project developments or prior attempts.">Background Milestones</Label>
-                  <div className="space-y-4">
-                    {data.background.milestones.map((m, i) => (
-                      <div key={i} className="grid grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <Input aria-label={`Milestone ${i+1} year`} value={m.year} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].year = v; updateField('background.milestones', n); }} placeholder="Year" />
-                        <Input aria-label={`Milestone ${i+1} month`} value={m.month} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].month = v; updateField('background.milestones', n); }} placeholder="Month" />
-                        <div className="col-span-2 flex gap-2">
-                          <Input aria-label={`Milestone ${i+1} event`} value={m.event} onChange={(v: string) => { const n = [...data.background.milestones]; n[i].event = v; updateField('background.milestones', n); }} placeholder="Event" />
-                          <button onClick={() => updateField('background.milestones', data.background.milestones.filter((_, idx) => idx !== i))} className="text-red-500" aria-label={`Remove milestone ${i+1}`}>&times;</button>
-                        </div>
-                      </div>
-                    ))}
-                    <button onClick={() => updateField('background.milestones', [...data.background.milestones, { year: '', month: '', event: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Milestone</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* LETTERS */}
-          {activeSection === 'letters' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Support Letters</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="letters-heading" tooltip="Title for the letters of support section.">Section Heading</Label><Input id="letters-heading" value={data.letters.heading} onChange={(v: string) => updateField('letters.heading', v)} /></div>
-                <div><Label htmlFor="letters-desc" tooltip="Introductory text describing the community backing.">Description</Label><TextArea id="letters-desc" value={data.letters.description} onChange={(v: string) => updateField('letters.description', v)} /></div>
-                <div className="grid gap-6">
-                  {data.letters.items.map((letter, i) => (
-                    <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4 relative">
-                      <button onClick={() => updateField('letters.items', data.letters.items.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-red-500 font-black text-xl" aria-label={`Remove letter ${i+1}`}>&times;</button>
-                      <div><Label htmlFor={`letter-title-${i}`} tooltip="The author or name of the letter of support.">Letter Title</Label><Input id={`letter-title-${i}`} value={letter.title} onChange={(v: string) => { const n = [...data.letters.items]; n[i].title = v; updateField('letters.items', n); }} /></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div><Label htmlFor={`letter-img-${i}`} tooltip="The file path to the scanned letter image.">Document Image Path</Label><Input id={`letter-img-${i}`} value={letter.image} onChange={(v: string) => { const n = [...data.letters.items]; n[i].image = v; updateField('letters.items', n); }} /></div>
-                        <div><Label htmlFor={`letter-exc-${i}`} tooltip="A short, powerful quote from the letter.">Preview Excerpt</Label><TextArea id={`letter-exc-${i}`} value={letter.excerpt} onChange={(v: string) => { const n = [...data.letters.items]; n[i].excerpt = v; updateField('letters.items', n); }} /></div>
-                      </div>
-                    </div>
-                  ))}
-                  <button onClick={() => updateField('letters.items', [...data.letters.items, { title: 'New Letter', image: '', excerpt: '' }])} className="w-full border-2 border-dashed border-slate-700 py-6 rounded-3xl text-slate-500 font-black text-xs uppercase hover:border-yellow-500 transition-all">+ Add Official Letter</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* SUBMARINE FACTS */}
-          {activeSection === 'submarineFacts' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Submarine Facts</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="facts-heading" tooltip="Title for the technical specifications section.">Section Heading</Label><Input id="facts-heading" value={data.submarineFacts.heading} onChange={(v: string) => updateField('submarineFacts.heading', v)} /></div>
-                <div><Label htmlFor="facts-img" tooltip="Main illustrative image for the submarine specs.">Hero Fact Image Path</Label><Input id="facts-img" value={data.submarineFacts.image} onChange={(v: string) => updateField('submarineFacts.image', v)} /></div>
-                <div className="grid grid-cols-3 gap-4">
-                  {data.submarineFacts.facts.map((fact, i) => (
-                    <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative">
-                      <button onClick={() => updateField('submarineFacts.facts', data.submarineFacts.facts.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full text-white text-[10px]" aria-label={`Remove fact ${i+1}`}>&times;</button>
-                      <Input aria-label={`Fact ${i+1} label`} value={fact.label} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].label = v; updateField('submarineFacts.facts', n); }} placeholder="Label" />
-                      <Input aria-label={`Fact ${i+1} value`} value={fact.value} onChange={(v: string) => { const n = [...data.submarineFacts.facts]; n[i].value = v; updateField('submarineFacts.facts', n); }} placeholder="Value" />
-                    </div>
-                  ))}
-                  <button onClick={() => updateField('submarineFacts.facts', [...data.submarineFacts.facts, { label: '', value: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-[10px] uppercase">+ Add Fact</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TIMELINE */}
-          {activeSection === 'timeline' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Ship History</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="flex justify-end">
-                <button onClick={() => updateField('timeline.milestones', [...data.timeline.milestones, { date: '', title: '', details: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Milestone</button>
-              </div>
-              <div className="space-y-4">
-                {data.timeline.milestones.map((m, i) => (
-                  <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-6 items-start">
-                    <div className="w-32"><Label htmlFor={`timeline-date-${i}`} tooltip="The specific year or date for this event.">Date</Label><Input id={`timeline-date-${i}`} value={m.date} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].date = v; updateField('timeline.milestones', n); }} /></div>
-                    <div className="flex-1 space-y-4">
-                      <div><Label htmlFor={`timeline-title-${i}`} tooltip="Short name for the historical milestone.">Title</Label><Input id={`timeline-title-${i}`} value={m.title} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].title = v; updateField('timeline.milestones', n); }} /></div>
-                      <div><Label htmlFor={`timeline-details-${i}`} tooltip="Detailed explanation of what happened at this point in the ship's life.">Details</Label><TextArea id={`timeline-details-${i}`} rows={2} value={m.details} onChange={(v: string) => { const n = [...data.timeline.milestones]; n[i].details = v; updateField('timeline.milestones', n); }} /></div>
-                    </div>
-                    <button onClick={() => updateField('timeline.milestones', data.timeline.milestones.filter((_, idx) => idx !== i))} className="text-red-500 pt-8" aria-label={`Remove history milestone ${i+1}`}>&times;</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* PHASES */}
-          {activeSection === 'phases' && (
-            <section className="space-y-12">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Project Phases</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              {data.phases.phaseList.map((phase, idx) => (
-                <div key={idx} className="bg-slate-800/50 p-8 rounded-3xl border border-slate-700 space-y-6">
-                  <h4 className="text-xl font-black text-yellow-500 italic uppercase tracking-tight">Phase {phase.number}: {phase.title}</h4>
-                  <div className="grid gap-6">
-                    <div><Label htmlFor={`phase-title-${idx}`} tooltip="The official name for this project phase.">Phase Title</Label><Input id={`phase-title-${idx}`} value={phase.title} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].title = v; updateField('phases.phaseList', nl); }} /></div>
-                    <div><Label htmlFor={`phase-desc-${idx}`} tooltip="What will be accomplished during this phase.">Description</Label><Input id={`phase-desc-${idx}`} value={phase.description} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].description = v; updateField('phases.phaseList', nl); }} /></div>
-                    <div className="grid grid-cols-3 gap-6">
-                      <div><Label htmlFor={`phase-status-${idx}`} tooltip="Current status (e.g., In Progress, Upcoming, Completed).">Status</Label><Input id={`phase-status-${idx}`} value={phase.status} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].status = v; updateField('phases.phaseList', nl); }} /></div>
-                      <div><Label htmlFor={`phase-cost-${idx}`} tooltip="The estimated financial requirement for this phase.">Est. Cost</Label><Input id={`phase-cost-${idx}`} value={phase.cost} onChange={(v: string) => { const nl = [...data.phases.phaseList]; nl[idx].cost = v; updateField('phases.phaseList', nl); }} /></div>
-                      <div>
-                        <Label htmlFor={`phase-pct-${idx}`} tooltip="Numeric completion percentage (0-100).">% Complete</Label>
-                        <Input 
-                          id={`phase-pct-${idx}`}
-                          type="number" 
-                          value={phase.percentComplete || ''} 
-                          onChange={(v: string) => { 
-                            const nl = [...data.phases.phaseList]; 
-                            const parsed = parseInt(v, 10);
-                            nl[idx].percentComplete = isNaN(parsed) ? 0 : parsed;
-                            updateField('phases.phaseList', nl); 
-                          }} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {yamlError && <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 font-mono text-xs text-red-200">{yamlError}</p>}
             </section>
-          )}
-
-          {/* BUDGET */}
-          {activeSection === 'budget' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Budget & Remaining Need</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="budget-heading" tooltip="The title for the financial overview section.">Section Heading</Label><Input id="budget-heading" value={data.budget.heading} onChange={(v: string) => updateField('budget.heading', v)} /></div>
-                <div><Label htmlFor="budget-total" tooltip="The remaining dollar amount needed to reach the goal.">Total Remaining Cost (Text)</Label><Input id="budget-total" value={data.budget.totalRemaining} onChange={(v: string) => updateField('budget.totalRemaining', v)} /></div>
-                <div><Label htmlFor="budget-note" tooltip="Additional context regarding the budget or fundraising needs.">Bottom Note</Label><TextArea id="budget-note" rows={4} value={data.budget.note} onChange={(v: string) => updateField('budget.note', v)} /></div>
-              </div>
-            </div>
-          )}
-
-          {/* LOCATION SHIFT */}
-          {activeSection === 'locationShift' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Selection Story</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="grid gap-10">
-                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">Original Concept (Freedom Park)</h4>
-                  <div><Label htmlFor="loc-heading" tooltip="Title for the original proposed location.">Freedom Park Heading</Label><Input id="loc-heading" value={data.locationShift.heading} onChange={(v: string) => updateField('locationShift.heading', v)} /></div>
-                  <div><Label htmlFor="loc-sub" tooltip="Why Freedom Park was initially chosen and why it failed.">Subtitle Explanation</Label><TextArea id="loc-sub" value={data.locationShift.subtitle} onChange={(v: string) => updateField('locationShift.subtitle', v)} /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label htmlFor="loc-flood" tooltip="Image showing flood risk or issues at Freedom Park.">Flood Image Path</Label><Input id="loc-flood" value={data.locationShift.floodImage} onChange={(v: string) => updateField('locationShift.floodImage', v)} /></div>
-                    <div><Label htmlFor="loc-flood-cap" tooltip="Descriptive text for the flood image.">Flood Image Caption</Label><Input id="loc-flood-cap" value={data.locationShift.floodCaption} onChange={(v: string) => updateField('locationShift.floodCaption', v)} /></div>
-                  </div>
-                </div>
-                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                  <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">New Location (Levi Carter Site)</h4>
-                  <div><Label htmlFor="loc-new-heading" tooltip="Title for the new, superior location.">Site Heading</Label><Input id="loc-new-heading" value={data.locationShift.newLocationHeading} onChange={(v: string) => updateField('locationShift.newLocationHeading', v)} /></div>
-                  <div><Label htmlFor="loc-new-body" tooltip="Detailed benefits of the Levi Carter Park site.">Description Body</Label><TextArea id="loc-new-body" rows={4} value={data.locationShift.newLocationBody} onChange={(v: string) => updateField('locationShift.newLocationBody', v)} /></div>
-                  <div><Label htmlFor="loc-map" tooltip="Aerial view or map of the new site location.">Map Image Path</Label><Input id="loc-map" value={data.locationShift.mapImage} onChange={(v: string) => updateField('locationShift.mapImage', v)} /></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* SITE PLAN */}
-          {activeSection === 'sitePlan' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Site Plan</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="plan-heading" tooltip="The title for the architectural site plan section.">Section Heading</Label><Input id="plan-heading" value={data.sitePlan.heading} onChange={(v: string) => updateField('sitePlan.heading', v)} /></div>
-                <div><Label htmlFor="plan-desc" tooltip="High-level overview of the memorial's physical layout.">Main Description</Label><TextArea id="plan-desc" value={data.sitePlan.description} onChange={(v: string) => updateField('sitePlan.description', v)} /></div>
-                <div><Label htmlFor="plan-detail" tooltip="Technical or specific details about the construction and landscaping.">Detail Description</Label><TextArea id="plan-detail" value={data.sitePlan.detail} onChange={(v: string) => updateField('sitePlan.detail', v)} /></div>
-                <div><Label htmlFor="plan-img" tooltip="File path to the architectural rendering or blueprint.">Plan Render Image Path</Label><Input id="plan-img" value={data.sitePlan.renderImage} onChange={(v: string) => updateField('sitePlan.renderImage', v)} /></div>
-              </div>
-            </div>
-          )}
-
-          {/* IMAGE GALLERY */}
-          {activeSection === 'gallery' && (
-            <section className="space-y-10">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-4xl font-black italic uppercase tracking-tighter">Image Gallery</h3>
-                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-1">Main Site Assets</p>
-                </div>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="flex justify-end">
-                <button onClick={() => updateField('gallery.images', [...data.gallery.images, { src: '/images/placeholder.jpg', caption: 'New Image' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Item</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {data.gallery.images.map((img, idx) => (
-                  <div key={idx} className="bg-slate-800/50 rounded-3xl border border-slate-700 p-6 space-y-4">
-                    <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
-                      <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                      <div className="absolute top-2 right-2 flex gap-2">
-                        <button onClick={() => { const nl = data.gallery.images.filter((_, i) => i !== idx); updateField('gallery.images', nl); }} className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all" aria-label={`Remove gallery image ${idx+1}`}>&times;</button>
-                      </div>
-                    </div>
-                    <div><Label htmlFor={`gal-path-${idx}`} tooltip="File path to the gallery image.">Image Path</Label><Input id={`gal-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].src = v; updateField('gallery.images', nl); }} /></div>
-                    <div><Label htmlFor={`gal-cap-${idx}`} tooltip="Caption text displayed under the image.">Caption</Label><Input id={`gal-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.gallery.images]; nl[idx].caption = v; updateField('gallery.images', nl); }} /></div>
-                  </div>
-                ))}
-              </div>
+          ) : sectionValue !== undefined ? (
+            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 md:p-5">
+              <ContentEditor
+                value={sectionValue}
+                path={activeSection}
+                mediaAssets={mediaAssets}
+                uploadingPath={uploadingPath}
+                onChange={updateField}
+                onUpload={handleUpload}
+              />
             </section>
+          ) : (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">This content section is missing from the loaded data.</div>
           )}
-
-          {/* EXECUTION PHOTOS */}
-          {activeSection === 'executionPhotos' && (
-            <section className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Execution Photos</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="flex justify-end">
-                <button onClick={() => updateField('executionPhotos.photos', [...data.executionPhotos.photos, { src: '/images/placeholder.jpg', caption: 'New Photo', year: '2026' }])} className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase italic tracking-tighter hover:bg-white transition-all">+ Add Photo</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {data.executionPhotos.photos.map((img, idx) => (
-                  <div key={idx} className="bg-slate-800/50 rounded-3xl border border-slate-700 p-6 space-y-4">
-                    <div className="aspect-video bg-black rounded-2xl overflow-hidden relative group">
-                      <img src={img.src} alt={img.caption} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                      <button onClick={() => { const nl = data.executionPhotos.photos.filter((_, i) => i !== idx); updateField('executionPhotos.photos', nl); }} className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-lg" aria-label={`Remove execution photo ${idx+1}`}>&times;</button>
-                    </div>
-                    <div><Label htmlFor={`exe-path-${idx}`} tooltip="File path to the on-site photo.">Path</Label><Input id={`exe-path-${idx}`} value={img.src} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].src = v; updateField('executionPhotos.photos', nl); }} /></div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-2"><Label htmlFor={`exe-cap-${idx}`} tooltip="Short description of the photo content.">Caption</Label><Input id={`exe-cap-${idx}`} value={img.caption} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].caption = v; updateField('executionPhotos.photos', nl); }} /></div>
-                      <div><Label htmlFor={`exe-year-${idx}`} tooltip="The year the photo was taken.">Year</Label><Input id={`exe-year-${idx}`} value={img.year} onChange={(v: string) => { const nl = [...data.executionPhotos.photos]; nl[idx].year = v; updateField('executionPhotos.photos', nl); }} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* NAVY 250 */}
-          {activeSection === 'navy250' && (
-            <div className="space-y-10">
-              <div>
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Homepage Countdown</h3>
-                <p className="text-slate-400 mt-2">Control the countdown displayed at the top of the public homepage.</p>
-              </div>
-              <div className="space-y-6 bg-slate-800 p-8 rounded-3xl border border-slate-700">
-                <label htmlFor="countdown-enabled" className="flex items-center justify-between gap-6 p-5 rounded-2xl bg-slate-900 border border-slate-700 cursor-pointer">
-                  <div>
-                    <span className="block text-lg font-black text-white">Show countdown on homepage</span>
-                    <span className="block text-sm text-slate-400 mt-1">
-                      Turn this off to hide the countdown without deleting its date or wording.
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-3 shrink-0">
-                    <span className={`text-xs font-black uppercase tracking-widest ${data.navy250.countdownEnabled !== false ? 'text-green-400' : 'text-slate-500'}`}>
-                      {data.navy250.countdownEnabled !== false ? 'Visible' : 'Hidden'}
-                    </span>
-                    <input
-                      id="countdown-enabled"
-                      type="checkbox"
-                      checked={data.navy250.countdownEnabled !== false}
-                      onChange={(event) => updateField('navy250.countdownEnabled', event.target.checked)}
-                      className="w-6 h-6 accent-green-500 cursor-pointer"
-                    />
-                  </span>
-                </label>
-
-                <div className={`space-y-6 transition-opacity ${data.navy250.countdownEnabled !== false ? 'opacity-100' : 'opacity-50'}`}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="navy-deadline" tooltip="The date and time the countdown reaches zero.">Event date and time</Label>
-                      <Input id="navy-deadline" type="datetime-local" value={data.navy250.deadline || ''} onChange={(v: string) => updateField('navy250.deadline', v)} />
-                    </div>
-                    <div><Label htmlFor="navy-label">Countdown heading</Label><Input id="navy-label" value={data.navy250.deadlineLabel || ''} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
-                  </div>
-                  <div><Label htmlFor="navy-subtext">Text below countdown</Label><Input id="navy-subtext" value={data.navy250.deadlineText || ''} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-700">
-                  <h4 className="text-xl font-black italic uppercase tracking-tighter mb-6">Navy 250 Content</h4>
-                </div>
-                <div><Label htmlFor="navy-logo">Official Logo Path</Label><Input id="navy-logo" value={data.navy250.logo} onChange={(v: string) => updateField('navy250.logo', v)} /></div>
-                <div><Label htmlFor="navy-heading">Main Heading</Label><TextArea id="navy-heading" value={data.navy250.heading} onChange={(v: string) => updateField('navy250.heading', v)} /></div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div><Label htmlFor="navy-subheading">Subheading (Vessel Name)</Label><Input id="navy-subheading" value={data.navy250.subheading} onChange={(v: string) => updateField('navy250.subheading', v)} /></div>
-                  <div><Label htmlFor="navy-subtitle">Subtitle (Vessel Dates)</Label><Input id="navy-subtitle" value={data.navy250.subtitle} onChange={(v: string) => updateField('navy250.subtitle', v)} /></div>
-                </div>
-                <div>
-                  <Label htmlFor="navy-images">Asset Images (Comma separated)</Label>
-                  <Input id="navy-images" value={data.navy250.images.join(', ')} onChange={(v: string) => updateField('navy250.images', v.split(',').map(s => s.trim()))} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* FUNDRAISING */}
-          {activeSection === 'fundraising' && (
-            <section className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Fundraising Progress</h3>
-              <div className="grid grid-cols-2 gap-10">
-                <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
-                  <Label htmlFor="fund-goal">Current Goal ($)</Label>
-                  <Input 
-                    id="fund-goal"
-                    type="number" 
-                    value={data.fundraisingProgress.goal || ''} 
-                    onChange={(v: string) => {
-                      const parsed = parseInt(v, 10);
-                      updateField('fundraisingProgress.goal', isNaN(parsed) ? 0 : parsed);
-                    }} 
-                  />
-                </div>
-                <div className="bg-slate-800/30 p-8 rounded-3xl border border-slate-700">
-                  <Label htmlFor="fund-raised">Amount Raised ($)</Label>
-                  <Input 
-                    id="fund-raised"
-                    type="number" 
-                    value={data.fundraisingProgress.raised || ''} 
-                    onChange={(v: string) => {
-                      const parsed = parseInt(v, 10);
-                      updateField('fundraisingProgress.raised', isNaN(parsed) ? 0 : parsed);
-                    }} 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fund-donors">Donor Count</Label>
-                  <Input 
-                    id="fund-donors"
-                    type="number" 
-                    value={data.fundraisingProgress.donorCount || ''} 
-                    onChange={(v: string) => {
-                      const parsed = parseInt(v, 10);
-                      updateField('fundraisingProgress.donorCount', isNaN(parsed) ? 0 : parsed);
-                    }} 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fund-time">Last Gift Timestamp</Label>
-                  <Input id="fund-time" value={data.fundraisingProgress.lastGiftTime} onChange={(v: string) => updateField('fundraisingProgress.lastGiftTime', v)} />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* WHY NOW */}
-          {activeSection === 'whyNow' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Why Now?</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="why-heading" tooltip="The title for the urgency/context section.">Section Heading</Label><Input id="why-heading" value={data.whyNow.heading} onChange={(v: string) => updateField('whyNow.heading', v)} /></div>
-                <div><Label htmlFor="why-tagline" tooltip="A final summary statement about project urgency.">Tagline Footer</Label><Input id="why-tagline" value={data.whyNow.tagline} onChange={(v: string) => updateField('whyNow.tagline', v)} /></div>
-                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-4">
-                  <Label tooltip="The estimated cost for this specific memorial project.">Memorial Project Pricing</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input aria-label="Memorial project name" value={data.whyNow.memorial.name} onChange={(v: string) => updateField('whyNow.memorial.name', v)} />
-                    <Input aria-label="Memorial project cost" value={data.whyNow.memorial.cost} onChange={(v: string) => updateField('whyNow.memorial.cost', v)} />
-                  </div>
-                </div>
-                <div>
-                  <Label tooltip="Comparative costs of other major city projects for market context.">Other City Projects (Market Context)</Label>
-                  <div className="space-y-4">
-                    {data.whyNow.projects.map((p, i) => (
-                      <div key={i} className="grid grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div className="col-span-2"><Input aria-label={`Project ${i+1} name`} value={p.name} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].name = v; updateField('whyNow.projects', n); }} /></div>
-                        <div className="flex gap-2">
-                          <Input aria-label={`Project ${i+1} cost`} value={p.cost} onChange={(v: string) => { const n = [...data.whyNow.projects]; n[i].cost = v; updateField('whyNow.projects', n); }} />
-                          <button onClick={() => updateField('whyNow.projects', data.whyNow.projects.filter((_, idx) => idx !== i))} className="text-red-500" aria-label={`Remove project ${i+1}`}>&times;</button>
-                        </div>
-                      </div>
-                    ))}
-                    <button onClick={() => updateField('whyNow.projects', [...data.whyNow.projects, { name: '', cost: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add City Project</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CALL TO ACTION */}
-          {activeSection === 'callToAction' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Calls to Action</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              {(['memorial', 'donor'] as const).map((mode) => {
-                const modeData = data.callToAction[mode];
-                return (
-                  <div key={mode} className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                    <h4 className="text-xl font-bold text-yellow-500 uppercase italic underline underline-offset-8 decoration-yellow-500/30">{mode.toUpperCase()} MODE SETTINGS</h4>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div><Label htmlFor={`cta-heading-${mode}`} tooltip="Main heading for the donation call to action.">Heading</Label><Input id={`cta-heading-${mode}`} value={modeData.heading} onChange={(v: string) => updateField(`callToAction.${mode}.heading`, v)} /></div>
-                      <div><Label htmlFor={`cta-tagline-${mode}`} tooltip="Supporting text under the heading.">Tagline</Label><Input id={`cta-tagline-${mode}`} value={modeData.tagline} onChange={(v: string) => updateField(`callToAction.${mode}.tagline`, v)} /></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div><Label htmlFor={`cta-form-text-${mode}`} tooltip="Text displayed on the download button.">Pledge Form Text</Label><Input id={`cta-form-text-${mode}`} value={modeData.pledgeFormText} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormText`, v)} /></div>
-                      <div><Label htmlFor={`cta-form-url-${mode}`} tooltip="Link to the pledge form document.">Pledge Form URL</Label><Input id={`cta-form-url-${mode}`} value={modeData.pledgeFormUrl} onChange={(v: string) => updateField(`callToAction.${mode}.pledgeFormUrl`, v)} /></div>
-                    </div>
-                    <div><Label htmlFor={`cta-tax-${mode}`} tooltip="Disclaimer about tax-deductible status.">Tax Note</Label><Input id={`cta-tax-${mode}`} value={modeData.taxNote} onChange={(v: string) => updateField(`callToAction.${mode}.taxNote`, v)} /></div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* VOLUNTEER */}
-          {activeSection === 'volunteer' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Volunteer Info</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label htmlFor="vol-heading" tooltip="Main title for the volunteer recruitment section.">Main Heading</Label><Input id="vol-heading" value={data.volunteer.heading} onChange={(v: string) => updateField('volunteer.heading', v)} /></div>
-                <div><Label htmlFor="vol-sub" tooltip="Supporting call to action for volunteers.">Subheading</Label><Input id="vol-sub" value={data.volunteer.subheading} onChange={(v: string) => updateField('volunteer.subheading', v)} /></div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="vol-name" tooltip="Primary person to contact for volunteering.">Contact Name</Label><Input id="vol-name" value={data.volunteer.contact?.name || ''} onChange={(v: string) => updateField('volunteer.contact.name', v)} /></div>
-                  <div><Label htmlFor="vol-phone" tooltip="Phone number for volunteer inquiries.">Contact Phone</Label><Input id="vol-phone" value={data.volunteer.contact?.phone || ''} onChange={(v: string) => updateField('volunteer.contact.phone', v)} /></div>
-                  <div><Label htmlFor="vol-email" tooltip="Email address for volunteer inquiries.">Contact Email</Label><Input id="vol-email" value={data.volunteer.contact?.email || ''} onChange={(v: string) => updateField('volunteer.contact.email', v)} /></div>
-                </div>
-                <div><Label htmlFor="vol-org" tooltip="The name of the partner organization managing volunteers.">Organization Name</Label><Input id="vol-org" value={data.volunteer.organization || ''} onChange={(v: string) => updateField('volunteer.organization', v)} /></div>
-                <div><Label htmlFor="vol-org-contact" tooltip="How to get in touch with the volunteer organization directly.">Organization Contact Details</Label><Input id="vol-org-contact" value={data.volunteer.organizationContact || ''} onChange={(v: string) => updateField('volunteer.organizationContact', v)} /></div>
-                <div><Label htmlFor="vol-opps" tooltip="List of specific roles or tasks available for volunteers.">Opportunities (Comma separated)</Label><TextArea id="vol-opps" value={data.volunteer.opportunities?.join(', ') || ''} onChange={(v: string) => updateField('volunteer.opportunities', v.split(',').map(s => s.trim()))} /></div>
-              </div>
-            </div>
-          )}
-
-          {/* STAKEHOLDERS */}
-          {activeSection === 'stakeholders' && (
-            <section className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Action Committee</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="flex justify-end">
-                <button onClick={() => updateField('stakeholders.members', [...data.stakeholders.members, { name: 'New Member', title: 'Member Title', subtitle: '' }])} className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase italic tracking-tighter">+ Add Member</button>
-              </div>
-              <div className="grid gap-4">
-                {data.stakeholders.members.map((member, idx) => (
-                  <div key={idx} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex gap-4 items-start relative group">
-                    <button onClick={() => updateField('stakeholders.members', data.stakeholders.members.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove member ${idx+1}`}>&times;</button>
-                    <div className="flex-1 grid grid-cols-3 gap-4">
-                      <div><Label htmlFor={`stake-name-${idx}`} tooltip="The full name of the committee member.">Name</Label><Input id={`stake-name-${idx}`} value={member.name} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].name = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label htmlFor={`stake-title-${idx}`} tooltip="The member's primary professional title or role.">Title</Label><Input id={`stake-title-${idx}`} value={member.title} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].title = v; updateField('stakeholders.members', n); }} /></div>
-                      <div><Label htmlFor={`stake-sub-${idx}`} tooltip="Additional organization or context for this member.">Subtitle (Optional)</Label><Input id={`stake-sub-${idx}`} value={member.subtitle || ''} onChange={(v: string) => { const n = [...data.stakeholders.members]; n[idx].subtitle = v; updateField('stakeholders.members', n); }} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* PRESENTED BY */}
-          {activeSection === 'presentedBy' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Presenters</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="space-y-6">
-                <div><Label htmlFor="pres-heading" tooltip="The title for the presenter introduction section.">Section Heading</Label><Input id="pres-heading" value={data.presentedBy.heading} onChange={(v: string) => updateField('presentedBy.heading', v)} /></div>
-                <div className="space-y-4">
-                  {data.presentedBy.presenters.map((p, i) => (
-                    <div key={i} className="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4 relative group">
-                      <button onClick={() => updateField('presentedBy.presenters', data.presentedBy.presenters.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100" aria-label={`Remove presenter ${i+1}`}>&times;</button>
-                      <div><Label htmlFor={`pres-name-${i}`} tooltip="Full name of the presenter.">Presenter Name</Label><Input id={`pres-name-${i}`} value={p.name} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].name = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label htmlFor={`pres-org-${i}`} tooltip="The organization the presenter represents.">Organization</Label><Input id={`pres-org-${i}`} value={p.org} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].org = v; updateField('presentedBy.presenters', n); }} /></div>
-                      <div><Label htmlFor={`pres-title-${i}`} tooltip="The presenter's official title.">Title</Label><Input id={`pres-title-${i}`} value={p.title} onChange={(v: string) => { const n = [...data.presentedBy.presenters]; n[i].title = v; updateField('presentedBy.presenters', n); }} /></div>
-                    </div>
-                  ))}
-                  <button onClick={() => updateField('presentedBy.presenters', [...data.presentedBy.presenters, { name: '', org: '', title: '' }])} className="w-full border-2 border-dashed border-slate-700 py-3 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Presenter</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CLOSE */}
-          {activeSection === 'close' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Closing Screen</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 space-y-6">
-                <div><Label htmlFor="close-heading" tooltip="The main headline for the final screen.">Main Heading</Label><Input id="close-heading" value={data.close.heading} onChange={(v: string) => updateField('close.heading', v)} /></div>
-                <div><Label htmlFor="close-sub" tooltip="A brief wrap-up message.">Subheading</Label><Input id="close-sub" value={data.close.subheading} onChange={(v: string) => updateField('close.subheading', v)} /></div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="close-org" tooltip="The organization name for contact.">Contact Org</Label><Input id="close-org" value={data.close.contactInfo.organization} onChange={(v: string) => updateField('close.contactInfo.organization', v)} /></div>
-                  <div><Label htmlFor="close-web" tooltip="The official project URL.">Website</Label><Input id="close-web" value={data.close.contactInfo.website} onChange={(v: string) => updateField('close.contactInfo.website', v)} /></div>
-                  <div><Label htmlFor="close-contact" tooltip="The main person to talk to.">Lead Contact</Label><Input id="close-contact" value={data.close.contactInfo.contact} onChange={(v: string) => updateField('close.contactInfo.contact', v)} /></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* FOOTER & LINKS */}
-          {activeSection === 'footer' && (
-            <div className="space-y-10">
-              <div className="flex justify-between items-start">
-                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Footer & Links</h3>
-                <HelpButton onClick={() => setIsHelpOpen(true)} />
-              </div>
-              <div className="grid gap-10">
-                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700">
-                  <Label htmlFor="footer-addr" tooltip="Full mailing address. Use a new line for each part.">Mailing Address (One part per line)</Label>
-                  <TextArea id="footer-addr" rows={4} value={data.footer.address.join('\n')} onChange={(v: string) => updateField('footer.address', v.split('\n'))} />
-                </div>
-                <div className="bg-slate-800 p-8 rounded-3xl border border-slate-700 grid grid-cols-3 gap-4">
-                  <div><Label htmlFor="footer-name" tooltip="Name of the footer contact.">Contact Name</Label><Input id="footer-name" value={data.footer.contact.name} onChange={(v: string) => updateField('footer.contact.name', v)} /></div>
-                  <div><Label htmlFor="footer-email" tooltip="The primary support email.">Email</Label><Input id="footer-email" value={data.footer.contact.email} onChange={(v: string) => updateField('footer.contact.email', v)} /></div>
-                  <div><Label htmlFor="footer-phone" tooltip="The official contact number.">Phone</Label><Input id="footer-phone" value={data.footer.contact.phone} onChange={(v: string) => updateField('footer.contact.phone', v)} /></div>
-                </div>
-                <div>
-                  <Label>Quick Links</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {data.footer.quickLinks.map((link, i) => (
-                      <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex gap-2">
-                        <Input aria-label={`Link ${i+1} label`} value={link.label} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].label = v; updateField('footer.quickLinks', n); }} placeholder="Label" />
-                        <Input aria-label={`Link ${i+1} URL`} value={link.href} onChange={(v: string) => { const n = [...data.footer.quickLinks]; n[i].href = v; updateField('footer.quickLinks', n); }} placeholder="URL" />
-                        <button onClick={() => updateField('footer.quickLinks', data.footer.quickLinks.filter((_, idx) => idx !== i))} className="text-red-500 font-black" aria-label={`Remove link ${i+1}`}>&times;</button>
-                      </div>
-                    ))}
-                    <button onClick={() => updateField('footer.quickLinks', [...data.footer.quickLinks, { label: '', href: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Link</button>
-                  </div>
-                </div>
-                <div>
-                  <Label>Partner Logos</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {data.footer.logos.map((logo, i) => (
-                      <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 relative group">
-                        <button onClick={() => updateField('footer.logos', data.footer.logos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove logo ${i+1}`}>&times;</button>
-                        <Input aria-label={`Logo ${i+1} path`} value={logo.src} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].src = v; updateField('footer.logos', n); }} placeholder="Image Path" />
-                        <Input aria-label={`Logo ${i+1} alt text`} value={logo.alt} onChange={(v: string) => { const n = [...data.footer.logos]; n[i].alt = v; updateField('footer.logos', n); }} placeholder="Alt Text" />
-                      </div>
-                    ))}
-                    <button onClick={() => updateField('footer.logos', [...data.footer.logos, { src: '', alt: '' }])} className="border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-black text-xs uppercase">+ Add Logo</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-20 pt-10 border-t border-slate-800 text-center text-[10px] font-black uppercase tracking-[0.5em] text-slate-600 italic">
-             End of Command Protocol • Transmission Secure
-          </div>
         </div>
       </main>
 
-      <HelpModal 
-        isOpen={isHelpOpen} 
-        onClose={() => setIsHelpOpen(false)} 
-        initialSection={activeSection}
-      />
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-800 bg-slate-900/95 p-3 backdrop-blur md:hidden">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canPublish}
+          className={`w-full rounded-xl py-3 text-sm font-bold ${canPublish ? 'bg-green-600 text-white' : 'bg-slate-800 text-slate-500'}`}
+        >
+          {isSaving ? 'Publishing…' : isDirty ? 'Publish Changes' : publishDetails?.label || 'Published'}
+        </button>
+      </div>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-      `}</style>
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} initialSection={activeSection} />
     </div>
   )
 }

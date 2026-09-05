@@ -30,7 +30,6 @@ export function CardSurface({
   ...rest
 }: CardSurfaceProps) {
   const variantStyles: Record<Variant, string> = {
-    // Light on offwhite background needs definition.
     light: 'bg-white text-slate-deep border-slate-200/70',
     navy: 'bg-navy-dark/35 text-offwhite border-brass/20',
     slate: 'bg-slate-deep/35 text-offwhite border-brass/20',
@@ -51,13 +50,10 @@ export function CardSurface({
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     onKeyDown?.(e)
-    if (!isClickable) return
-    if (e.defaultPrevented) return
+    if (!isClickable || e.defaultPrevented) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      // Trigger the same click handler for keyboard users.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onClick?.(e as any)
+      e.currentTarget.click()
     }
   }
 

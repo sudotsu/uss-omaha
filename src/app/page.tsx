@@ -33,7 +33,7 @@ export default function HomePage() {
           { id: 'mission', label: 'Mission' },
           { id: 'phases', label: 'Phases' },
           { id: 'gallery', label: 'Gallery' },
-          { id: 'donate', label: 'Donate', href: 'https://ussomahamemorial.org/donate', highlight: true }
+          { id: 'donate', label: 'Donate', href: 'https://ussomahamemorial.org/donate', highlight: true },
         ]}
         mainSiteUrl="https://ussomahamemorial.org/home"
       />
@@ -45,25 +45,21 @@ export default function HomePage() {
       <Letters data={content.letters} />
       <SubmarineFacts data={content.submarineFacts} />
       <Timeline data={content.timeline} />
-
       <Phases data={content.phases} />
-      <WhatYourGiftBuilds phases={content.phases} />
+      <WhatYourGiftBuilds data={content.whatYourGiftBuilds} />
       <FundraisingProgress data={content.fundraisingProgress} />
       <Budget data={content.budget} />
-
       <LocationShift data={content.locationShift} />
       <SitePlan data={content.sitePlan} />
       <Gallery data={content.gallery} />
       <ExecutionPhotos data={content.executionPhotos} />
       <WhyNow data={content.whyNow} />
-
       <CallToAction data={content.callToAction} mode={content.metadata.mode} />
       <Volunteer data={content.volunteer} />
       <Stakeholders data={content.stakeholders} />
       <Close data={content.close} />
       <PresentedBy data={content.presentedBy} />
-
-      <Footer data={content.footer} />
+      <Footer data={content.footer} metadata={content.metadata} />
     </main>
   )
 }
