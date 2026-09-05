@@ -61,7 +61,7 @@ export function Hero({ data, navy250, isPrint = false }: HeroProps) {
         <p className="text-3xl text-offwhite font-serif">{data.subheading}</p>
 
         {/* Countdown Timer */}
-        {navy250.deadline && (
+        {navy250.countdownEnabled !== false && navy250.deadline && (
           <div className="mt-8 bg-navy-dark/80 rounded-lg p-6 border-2 border-brass/20 max-w-4xl mx-auto backdrop-blur-md shadow-2xl">
             <div className="text-brass text-sm font-serif uppercase tracking-widest mb-4">
               {navy250.deadlineLabel || 'Navy 250th Anniversary Goal'}
