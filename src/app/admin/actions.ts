@@ -243,6 +243,12 @@ export async function saveContent(newData: ContentData, expectedSha: string | nu
   }
 
   try {
+    validateContent(newData)
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Cannot publish invalid content' }
+  }
+
+  try {
     validateConfig()
   } catch (error: any) {
     if (process.env.NODE_ENV === 'development') {
@@ -263,8 +269,6 @@ export async function saveContent(newData: ContentData, expectedSha: string | nu
   const octokit = new Octokit({ auth: GITHUB_TOKEN })
 
   try {
-    validateContent(newData)
-
     // Read the latest published file so concurrent or duplicate saves fail safely
     let fileData: any
     try {
@@ -294,7 +298,8 @@ export async function saveContent(newData: ContentData, expectedSha: string | nu
       const currentYaml = Buffer.from(fileData.content, 'base64').toString('utf8')
       const yamlStr = yaml.dump(newData, { indent: 2, lineWidth: -1 })
 
-      if (currentYaml.trim() === yamlStr.trim()) {
+      const currentData = yaml.load(currentYaml)
+      if (JSON.stringify(currentData) === JSON.stringify(newData)) {
         return { success: true, changed: false, message: 'Everything is already published.' }
       }
 
