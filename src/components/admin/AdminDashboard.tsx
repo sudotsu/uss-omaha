@@ -195,7 +195,7 @@ export function AdminDashboard({ initialData, initialContentSha }: AdminDashboar
     { group: 'Media', items: [
       { id: 'gallery', label: 'Image Gallery' },
       { id: 'executionPhotos', label: 'Execution Photos' },
-      { id: 'navy250', label: 'Navy 250 Assets' },
+      { id: 'navy250', label: 'Countdown & Navy 250' },
     ]},
     { group: 'Engagement', items: [
       { id: 'fundraising', label: 'Fundraising Stats' },
@@ -698,15 +698,48 @@ export function AdminDashboard({ initialData, initialContentSha }: AdminDashboar
           {/* NAVY 250 */}
           {activeSection === 'navy250' && (
             <div className="space-y-10">
-              <h3 className="text-4xl font-black italic uppercase tracking-tighter">Navy 250 Assets</h3>
+              <div>
+                <h3 className="text-4xl font-black italic uppercase tracking-tighter">Homepage Countdown</h3>
+                <p className="text-slate-400 mt-2">Control the countdown displayed at the top of the public homepage.</p>
+              </div>
               <div className="space-y-6 bg-slate-800 p-8 rounded-3xl border border-slate-700">
+                <label htmlFor="countdown-enabled" className="flex items-center justify-between gap-6 p-5 rounded-2xl bg-slate-900 border border-slate-700 cursor-pointer">
+                  <div>
+                    <span className="block text-lg font-black text-white">Show countdown on homepage</span>
+                    <span className="block text-sm text-slate-400 mt-1">
+                      Turn this off to hide the countdown without deleting its date or wording.
+                    </span>
+                  </div>
+                  <span className="flex items-center gap-3 shrink-0">
+                    <span className={`text-xs font-black uppercase tracking-widest ${data.navy250.countdownEnabled !== false ? 'text-green-400' : 'text-slate-500'}`}>
+                      {data.navy250.countdownEnabled !== false ? 'Visible' : 'Hidden'}
+                    </span>
+                    <input
+                      id="countdown-enabled"
+                      type="checkbox"
+                      checked={data.navy250.countdownEnabled !== false}
+                      onChange={(event) => updateField('navy250.countdownEnabled', event.target.checked)}
+                      className="w-6 h-6 accent-green-500 cursor-pointer"
+                    />
+                  </span>
+                </label>
+
+                <div className={`space-y-6 transition-opacity ${data.navy250.countdownEnabled !== false ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="navy-deadline" tooltip="The date and time the countdown reaches zero.">Event date and time</Label>
+                      <Input id="navy-deadline" type="datetime-local" value={data.navy250.deadline || ''} onChange={(v: string) => updateField('navy250.deadline', v)} />
+                    </div>
+                    <div><Label htmlFor="navy-label">Countdown heading</Label><Input id="navy-label" value={data.navy250.deadlineLabel || ''} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
+                  </div>
+                  <div><Label htmlFor="navy-subtext">Text below countdown</Label><Input id="navy-subtext" value={data.navy250.deadlineText || ''} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-700">
+                  <h4 className="text-xl font-black italic uppercase tracking-tighter mb-6">Navy 250 Content</h4>
+                </div>
                 <div><Label htmlFor="navy-logo">Official Logo Path</Label><Input id="navy-logo" value={data.navy250.logo} onChange={(v: string) => updateField('navy250.logo', v)} /></div>
                 <div><Label htmlFor="navy-heading">Main Heading</Label><TextArea id="navy-heading" value={data.navy250.heading} onChange={(v: string) => updateField('navy250.heading', v)} /></div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div><Label htmlFor="navy-deadline">Deadline (ISO String)</Label><Input id="navy-deadline" value={data.navy250.deadline} onChange={(v: string) => updateField('navy250.deadline', v)} /></div>
-                  <div><Label htmlFor="navy-label">Countdown Label</Label><Input id="navy-label" value={data.navy250.deadlineLabel} onChange={(v: string) => updateField('navy250.deadlineLabel', v)} /></div>
-                </div>
-                <div><Label htmlFor="navy-subtext">Countdown Subtext</Label><Input id="navy-subtext" value={data.navy250.deadlineText} onChange={(v: string) => updateField('navy250.deadlineText', v)} /></div>
                 <div className="grid grid-cols-2 gap-6">
                   <div><Label htmlFor="navy-subheading">Subheading (Vessel Name)</Label><Input id="navy-subheading" value={data.navy250.subheading} onChange={(v: string) => updateField('navy250.subheading', v)} /></div>
                   <div><Label htmlFor="navy-subtitle">Subtitle (Vessel Dates)</Label><Input id="navy-subtitle" value={data.navy250.subtitle} onChange={(v: string) => updateField('navy250.subtitle', v)} /></div>
