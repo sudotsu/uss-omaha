@@ -1,35 +1,31 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-
-// --- TOOLTIP COMPONENT ---
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 interface TooltipProps {
   content: string
-  children: React.ReactNode
+  children: ReactNode
 }
 
-export const Tooltip = ({ content, children }: TooltipProps) => {
-  const [isVisible, setIsVisible] = useState(false)
-
+export function Tooltip({ content, children }: TooltipProps) {
+  const [visible, setVisible] = useState(false)
   return (
-    <div 
-      className="relative inline-block group"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
+    <span
+      className="relative inline-flex"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+      onFocus={() => setVisible(true)}
+      onBlur={() => setVisible(false)}
     >
       {children}
-      {isVisible && (
-        <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-950 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-yellow-500/50 shadow-xl whitespace-normal min-w-[200px] text-center animate-in fade-in slide-in-from-bottom-1 duration-200 pointer-events-none">
+      {visible && (
+        <span role="tooltip" className="absolute bottom-full left-1/2 z-[120] mb-2 w-56 -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-center text-xs font-medium normal-case tracking-normal text-slate-200 shadow-xl">
           {content}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-950" />
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   )
 }
-
-// --- HELP MODAL COMPONENT ---
 
 interface HelpModalProps {
   isOpen: boolean
@@ -37,297 +33,88 @@ interface HelpModalProps {
   initialSection?: string
 }
 
-export const HelpModal = ({ isOpen, onClose, initialSection }: HelpModalProps) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
+type HelpItem = {
+  id: string
+  title: string
+  description: string
+  tips: string[]
+}
+
+const HELP: HelpItem[] = [
+  { id: 'metadata', title: 'Site Identity', description: 'Controls browser/search identity and the site identity shown in the footer.', tips: ['Title and subtitle now feed real page metadata.', 'Year is used by the visible footer copyright.', 'Mode switches between the memorial and donor donation copy.'] },
+  { id: 'hero', title: 'Hero Section', description: 'Controls the homepage heading, subheading, and background image.', tips: ['Background Image is live content now, not a dead setting.', 'Use Upload image beside image fields instead of manually typing repository paths.'] },
+  { id: 'mission', title: 'Mission', description: 'Controls the mission statement and supporting highlights.', tips: ['Use short highlights for scanability.', 'Long copy fields expand into text areas automatically.'] },
+  { id: 'agenda', title: 'Meeting Agenda', description: 'Controls the section heading and agenda items.', tips: ['Add as many items as needed.', 'Remove is always visible and asks for confirmation.'] },
+  { id: 'footer', title: 'Footer & Links', description: 'Controls address, contact details, quick links, and partner logos.', tips: ['Each partner logo has image, alt text, and an editable website link.', 'Image fields can upload a new file or reuse an existing media-library asset.'] },
+  { id: 'background', title: 'Background Info', description: 'Controls the project background narrative, key points, and milestones.', tips: ['Milestones can be added or removed without touching raw YAML.', 'Repeated items use stable editor identities to avoid row mix-ups.'] },
+  { id: 'timeline', title: 'Ship History', description: 'Controls USS Omaha timeline entries.', tips: ['Date is free text for historical labels such as “Mar 1978”.', 'Use details for the longer explanation.'] },
+  { id: 'submarineFacts', title: 'Submarine Facts', description: 'Controls the fact list and supporting image.', tips: ['Fact rows are editable and reorder-safe during normal edits.', 'The image picker accepts repository media or uploads.'] },
+  { id: 'letters', title: 'Support Letters', description: 'Controls official support-letter cards.', tips: ['Each letter has title, image, and excerpt.', 'Uploaded images are committed to public/images/uploads.'] },
+  { id: 'phases', title: 'Project Phases', description: 'Controls project phases, status, cost, and completion percentage.', tips: ['Percent Complete is numeric.', 'Adding a phase creates all expected fields.'] },
+  { id: 'whatYourGiftBuilds', title: 'What Your Gift Builds', description: 'Controls the full donor-targeting section that was previously hard-coded.', tips: ['Heading, subheading, phase label, cards, and promise copy are all editable.', 'The cards still feed the selected gift designation into Donation Info.'] },
+  { id: 'budget', title: 'Budget & Need', description: 'Controls the remaining-need heading, amount, and note.', tips: ['Amounts remain formatted text so you can include currency symbols and wording.'] },
+  { id: 'locationShift', title: 'Site Selection', description: 'Controls the Freedom Park / Levi Carter Park story and its images.', tips: ['Both images use the media uploader/library.', 'Map caption is a normal editable field.'] },
+  { id: 'sitePlan', title: 'Site Plan', description: 'Controls the site-plan copy and render image.', tips: ['Use a high-resolution render for print output.'] },
+  { id: 'gallery', title: 'Image Gallery', description: 'Controls gallery cards and captions.', tips: ['Add/remove images from the visual editor.', 'Upload and select images directly from each row.'] },
+  { id: 'executionPhotos', title: 'Execution Photos', description: 'Controls construction/execution photos, captions, and years.', tips: ['Year is text so historical labels remain flexible.'] },
+  { id: 'navy250', title: 'Countdown & Navy 250', description: 'Controls the homepage countdown and Navy anniversary content.', tips: ['The date picker is explicitly Omaha time and saves a fixed UTC timestamp.', 'A past deadline is flagged; hide or update it instead of silently wondering why it reads zero.', 'Logo, heading, vessel line, dates, and images are now actually rendered.'] },
+  { id: 'fundraisingProgress', title: 'Fundraising Stats', description: 'Controls raised amount, goal, donor count, and last-gift copy.', tips: ['Raised, goal, and donor count are numeric fields.'] },
+  { id: 'whyNow', title: 'Why Now?', description: 'Controls comparison projects, memorial cost, and tagline.', tips: ['Add or remove comparison projects as needed.'] },
+  { id: 'callToAction', title: 'Donation Info', description: 'Controls both Memorial and Donor donation modes in full.', tips: ['Organization names, EINs, websites, emails, phone, mailing address, alternate organization, headings, tax note, and pledge link are all exposed.', 'No normal donation field requires God Mode anymore.'] },
+  { id: 'volunteer', title: 'Volunteer Info', description: 'Controls volunteer headings, contact information, opportunities, and organization fields.', tips: ['Optional fields stay available even when blank.'] },
+  { id: 'stakeholders', title: 'Action Committee', description: 'Controls committee members and titles.', tips: ['Remove buttons work on touch devices and require confirmation.'] },
+  { id: 'presentedBy', title: 'Presenters', description: 'Controls presenter names, organizations, and titles.', tips: ['Add additional presenters without editing YAML.'] },
+  { id: 'close', title: 'Closing Screen', description: 'Controls the closing question/contact block.', tips: ['Website accepts either a full https:// URL or a bare domain; the public link normalizes it safely.'] },
+  { id: 'godmode', title: 'God Mode', description: 'Raw YAML editing for advanced changes.', tips: ['It uses the exact same shared schema as the visual editor and server publish action.', 'Invalid YAML or invalid structure blocks publishing.'] },
+]
+
+export function HelpModal({ isOpen, onClose, initialSection }: HelpModalProps) {
+  const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isOpen && initialSection && scrollContainerRef.current) {
-      // Use a small timeout to ensure the DOM is ready
-      setTimeout(() => {
-        const element = document.getElementById(`help-section-${initialSection}`)
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }, 100)
+    if (!isOpen) return
+    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKeyDown)
+    const timer = window.setTimeout(() => {
+      if (initialSection) document.getElementById(`help-${initialSection}`)?.scrollIntoView({ block: 'start' })
+    }, 0)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('keydown', onKeyDown)
     }
-  }, [isOpen, initialSection])
+  }, [isOpen, initialSection, onClose])
 
   if (!isOpen) return null
 
-  const helpContent = [
-    {
-      id: 'metadata',
-      title: 'Site Identity',
-      description: 'The "ID Badge" of your website. This section controls how the site appears to search engines and in browser tabs.',
-      tips: [
-        'Site Title: The primary name shown in the browser tab. Keep it professional.',
-        'Subtitle: A short catchy phrase that appears near the title in search results.',
-        'Mode: "Memorial" is for standard browsing. "Donor" focuses the site on fundraising goals, adding donation meters and urgent calls to action.'
-      ]
-    },
-    {
-      id: 'hero',
-      title: 'Hero Section',
-      description: 'This is the "Billboard" at the very top of your home page. It needs to be high-impact.',
-      tips: [
-        'Main Heading: This is the first thing people read. Make it bold and meaningful.',
-        'Subheading: Provide a bit more context about the mission here.',
-        'Background Image Path: The background image should be high resolution. Usually, these are stored in /images/.'
-      ]
-    },
-    {
-      id: 'mission',
-      title: 'Mission',
-      description: 'The core purpose of the relaunch project. This defines the "Why".',
-      tips: [
-        'Heading: A short title for this section.',
-        'Statement: Your long-form explanation of the project goals.',
-        'Highlights: List 3-4 specific achievements or goals separated by commas.'
-      ]
-    },
-    {
-      id: 'agenda',
-      title: 'Meeting Agenda',
-      description: 'A structured list of events, typically used for formal presentations or gala events.',
-      tips: [
-        'Add Step: Use this to create a new line item in the schedule.',
-        'Title vs Description: The Title should be the event name (e.g., "Opening Remarks"), and the Description adds a bit more detail.'
-      ]
-    },
-    {
-      id: 'footer',
-      title: 'Footer & Links',
-      description: 'The bottom of the page containing contact info, addresses, and partner logos.',
-      tips: [
-        'Mailing Address: Enter the address exactly as it should appear on an envelope.',
-        'Partner Logos: Enter the image paths for sponsors. They will appear in a grid at the bottom.',
-        'Quick Links: Use these for social media or external resources.'
-      ]
-    },
-    {
-      id: 'background',
-      title: 'Background Info',
-      description: 'Deep-dive historical context for the project.',
-      tips: [
-        'Paragraphs: To start a new paragraph, press Enter twice to leave a blank line.',
-        'Key Points: High-level takeaways shown as a highlighted list.',
-        'Milestones: Use this to track specific dates in the ship\'s or project\'s history.'
-      ]
-    },
-    {
-      id: 'timeline',
-      title: 'Ship History',
-      description: 'A chronological journey of the USS Omaha (SSN-692).',
-      tips: [
-        'Date: Can be a year (1984) or a specific day (August 4, 1984).',
-        'Details: Provide a paragraph for each major milestone in the ship\'s service.'
-      ]
-    },
-    {
-      id: 'submarineFacts',
-      title: 'Submarine Facts',
-      description: 'Technical specifications and interesting trivia about the Los Angeles-class submarines.',
-      tips: [
-        'Label: The name of the stat (e.g., "Length").',
-        'Value: The actual data (e.g., "362 feet").',
-        'Image Path: A technical drawing or photo to accompany the stats.'
-      ]
-    },
-    {
-      id: 'letters',
-      title: 'Support Letters',
-      description: 'A collection of official endorsements from government or military officials.',
-      tips: [
-        'Letter Title: Who wrote the letter or what is it about?',
-        'Excerpt: A short, powerful quote from the letter to show in the preview.',
-        'Document Image: A scan of the actual signed document.'
-      ]
-    },
-    {
-      id: 'phases',
-      title: 'Project Phases',
-      description: 'Tracks the construction and relaunch progress.',
-      tips: [
-        'Status: e.g., "Planned", "In Progress", or "Completed".',
-        'Percent Complete: Enter a number from 0 to 100 to fill the progress bar.',
-        'Est. Cost: The budget allocated for this specific phase.'
-      ]
-    },
-    {
-      id: 'budget',
-      title: 'Budget & Need',
-      description: 'Financial transparency for the project.',
-      tips: [
-        'Total Remaining: The current dollar amount needed to reach the goal.',
-        'Bottom Note: Any specific legal or clarifying text regarding the budget.'
-      ]
-    },
-    {
-      id: 'locationShift',
-      title: 'Site Selection',
-      description: 'Explains the decision to move the memorial from Freedom Park to the new location.',
-      tips: [
-        'Flood Image: Use this to show the vulnerability of the old site.',
-        'New Location Body: Describe why the new site is the superior choice for the legacy.'
-      ]
-    },
-    {
-      id: 'sitePlan',
-      title: 'Site Plan',
-      description: 'Architectural details of the new memorial layout.',
-      tips: [
-        'Render Image: The primary 3D visualization or blueprint of the site.',
-        'Detail: Deep technical explanation of the architectural features.'
-      ]
-    },
-    {
-      id: 'gallery',
-      title: 'Image Gallery',
-      description: 'A general collection of photos related to the project.',
-      tips: [
-        'Caption: Every image needs a short description for accessibility.',
-        'Path: The /images/ path where the photo is stored.'
-      ]
-    },
-    {
-      id: 'executionPhotos',
-      title: 'Execution Photos',
-      description: 'A visual record of the physical work being done (transport, construction, etc).',
-      tips: [
-        'Year: Useful for tracking progress over time.',
-        'Caption: Describe what is happening in the photo.'
-      ]
-    },
-    {
-      id: 'fundraising',
-      title: 'Fundraising Stats',
-      description: 'Real-time (or manually updated) donor data.',
-      tips: [
-        'Goal: The final target amount.',
-        'Raised: The current total amount collected.',
-        'Donor Count: How many individuals have contributed so far.'
-      ]
-    },
-    {
-      id: 'whyNow',
-      title: 'Why Now?',
-      description: 'The urgency of the project and how it fits into the current landscape.',
-      tips: [
-        'Projects: Other surrounding infrastructure projects that make this timing perfect.',
-        'Tagline: A short "closing argument" for the necessity of the relaunch.'
-      ]
-    },
-    {
-      id: 'callToAction',
-      title: 'Donation Info',
-      description: 'How and where people can send their support.',
-      tips: [
-        'Memorial vs Donor: You can set different messages for the two site modes.',
-        'Mailing Address: Where physical checks should be sent.',
-        'Tax Note: Legal text regarding the 501(c)(3) status.'
-      ]
-    },
-    {
-      id: 'volunteer',
-      title: 'Volunteer Info',
-      description: 'Opportunities for people to give their time instead of their money.',
-      tips: [
-        'Opportunities: A list of specific tasks you need help with.',
-        'Contact Info: Who the potential volunteer should reach out to.'
-      ]
-    },
-    {
-      id: 'stakeholders',
-      title: 'Action Committee',
-      description: 'Recognizing the people leading the charge.',
-      tips: [
-        'Members: Add the name and title for each committee member.',
-        'Subtitle: Useful for adding their military rank or specific role.'
-      ]
-    },
-    {
-      id: 'presentedBy',
-      title: 'Presenters',
-      description: 'Credits for the individuals who put together the presentation or project.',
-      tips: [
-        'Name/Org/Title: Standard credits for the presentation team.'
-      ]
-    },
-    {
-      id: 'navy250',
-      title: 'Homepage Countdown & Navy 250',
-      description: 'Controls the homepage countdown and the Navy 250 anniversary content.',
-      tips: [
-        'Show Countdown: Turn it off to remove the complete countdown from the homepage without losing its settings.',
-        'Event Date and Time: Choose when the countdown reaches zero using the date picker.',
-        'Countdown Heading and Text: Edit the wording shown above and below the timer.',
-        'Images: A collection of logos or historical photos specifically for the anniversary.'
-      ]
-    },
-    {
-      id: 'godmode',
-      title: '⚡ God Mode',
-      description: 'Full control over the raw data file. High risk, high reward.',
-      tips: [
-        'Syntax: This is YAML. One misplaced space can break the entire site.',
-        'Verification: If the text turns red, the site cannot be updated. Check your indentation!',
-        'Safety: Use this only if you need to make bulk changes that the standard forms can\'t handle.'
-      ]
-    }
-  ]
-
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-slate-900 border-2 border-slate-700 rounded-3xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Admin help guide" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-800 p-4 md:p-5">
           <div>
-            <h2 className="text-2xl font-black text-yellow-500 uppercase italic tracking-tighter">Command Manual</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational Support & Glossary</p>
+            <h2 className="text-xl font-semibold text-white">Command Guide</h2>
+            <p className="mt-1 text-sm text-slate-500">What each section controls and where the less-obvious tools live.</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white hover:bg-red-600 transition-colors font-black text-xl"
-          >
-            &times;
-          </button>
-        </div>
+          <button type="button" onClick={onClose} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-400 hover:text-white" aria-label="Close help">Close</button>
+        </header>
 
-        {/* Content */}
-        <div 
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-12 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-800/20 via-transparent to-transparent"
-        >
-          {helpContent.map((section) => (
-            <div key={section.id} id={`help-section-${section.id}`} className="space-y-4 border-b border-slate-800 pb-12 last:border-0 scroll-mt-6">
-              <div className="flex items-center gap-4">
-                <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 rounded text-[10px] font-black uppercase tracking-widest border border-yellow-500/20">Section :: {section.id.toUpperCase()}</span>
-                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{section.title}</h3>
-              </div>
-              <p className="text-slate-300 text-lg leading-relaxed font-medium">{section.description}</p>
-              <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-inner">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest italic flex items-center gap-2">
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                  Commander's Intelligence:
-                </h4>
-                <ul className="space-y-3">
-                  {section.tips.map((tip, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-slate-400 items-start">
-                      <span className="text-yellow-500 font-black mt-0.5">»</span>
-                      <span>{tip}</span>
-                    </li>
-                  ))}
+        <div ref={container} className="overflow-y-auto p-4 md:p-5">
+          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><strong className="block text-sm text-white">Publish status</strong><span className="mt-1 block text-xs text-slate-500">Publishing → Building → Live / Failed is tracked from GitHub/Vercel checks.</span></div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><strong className="block text-sm text-white">Revision history</strong><span className="mt-1 block text-xs text-slate-500">Restore older content as a new commit; Git history stays intact.</span></div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><strong className="block text-sm text-white">Concurrent edits</strong><span className="mt-1 block text-xs text-slate-500">If someone publishes first, independent edits merge automatically instead of forcing a destructive refresh.</span></div>
+          </div>
+
+          <div className="divide-y divide-slate-800">
+            {HELP.map((item) => (
+              <section id={`help-${item.id}`} key={item.id} className="scroll-mt-4 py-4 first:pt-0">
+                <h3 className="text-base font-semibold text-yellow-300">{item.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-300">{item.description}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-500">
+                  {item.tips.map((tip) => <li key={tip}>{tip}</li>)}
                 </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 bg-slate-800 border-t border-slate-700 text-center flex justify-between items-center px-10">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Manual Revision 1.0.4</p>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.5em] italic">Transmission Secure</p>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Omaha SSN-692</p>
+              </section>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -1,15 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET
 const PASSCODE = process.env.ADMIN_PASSCODE
 
-// Keep authorized devices signed in until the user explicitly signs out.
-// A long max-age is refreshed on every protected request by updateSession().
-const SESSION_MAX_AGE_SECONDS = 10 * 365 * 24 * 60 * 60
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+const LOGIN_WINDOW_SECONDS = 15 * 60
+const LOGIN_LOCK_SECONDS = 15 * 60
+const MAX_LOGIN_ATTEMPTS = 8
+const ATTEMPT_COOKIE = 'admin_login_attempts'
+const serverAttempts = new Map<string, AttemptState>()
 
-// Fail closed: If secrets are missing, the app should not allow any auth operations
 const isConfigured = !!(SECRET_KEY && PASSCODE)
 
 if (!isConfigured) {
@@ -33,30 +35,105 @@ function normalizePasscode(value: string) {
     .toUpperCase()
 }
 
-export async function encrypt(payload: any) {
-  if (!isConfigured) throw new Error('Authentication not configured')
-  return await new SignJWT(payload)
+type AttemptState = {
+  count: number
+  windowStartedAt: number
+  lockedUntil?: number
+}
+
+async function readAttemptState(raw?: string): Promise<AttemptState> {
+  if (!raw) return { count: 0, windowStartedAt: Date.now() }
+  try {
+    const { payload } = await jwtVerify(raw, key, { algorithms: ['HS256'] })
+    const count = Number(payload.count)
+    const windowStartedAt = Number(payload.windowStartedAt)
+    const lockedUntil = payload.lockedUntil == null ? undefined : Number(payload.lockedUntil)
+    if (!Number.isFinite(count) || !Number.isFinite(windowStartedAt)) throw new Error('bad state')
+    return { count, windowStartedAt, lockedUntil: Number.isFinite(lockedUntil) ? lockedUntil : undefined }
+  } catch {
+    return { count: 0, windowStartedAt: Date.now() }
+  }
+}
+
+async function encodeAttemptState(state: AttemptState) {
+  return new SignJWT({ count: state.count, windowStartedAt: state.windowStartedAt, lockedUntil: state.lockedUntil })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
+    .setExpirationTime(`${LOGIN_WINDOW_SECONDS + LOGIN_LOCK_SECONDS}s`)
     .sign(key)
 }
 
-export async function decrypt(input: string): Promise<any> {
-  if (!isConfigured) throw new Error('Authentication not configured')
-  const { payload } = await jwtVerify(input, key, {
-    algorithms: ['HS256'],
-  })
-  return payload
+async function getClientKey() {
+  const requestHeaders = await headers()
+  const forwarded = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim()
+  return forwarded || requestHeaders.get('x-real-ip') || 'unknown-client'
 }
 
-export async function login(passcode: string) {
-  if (!isConfigured || normalizePasscode(passcode) !== normalizePasscode(PASSCODE!)) return false
+function activeAttemptState(state: AttemptState | undefined, now: number): AttemptState {
+  if (!state || now - state.windowStartedAt > LOGIN_WINDOW_SECONDS * 1000) {
+    return { count: 0, windowStartedAt: now }
+  }
+  return state
+}
 
-  const session = await encrypt({ user: 'admin' })
+export async function encrypt(payload: Record<string, unknown>) {
+  if (!isConfigured) throw new Error('Authentication not configured')
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_MAX_AGE_SECONDS}s`)
+    .sign(key)
+}
+
+export async function decrypt(input: string): Promise<Record<string, unknown>> {
+  if (!isConfigured) throw new Error('Authentication not configured')
+  const { payload } = await jwtVerify(input, key, { algorithms: ['HS256'] })
+  return payload as Record<string, unknown>
+}
+
+export async function login(passcode: string): Promise<{ success: boolean; retryAfterSeconds?: number }> {
+  if (!isConfigured) return { success: false }
 
   const cookieStore = await cookies()
+  const clientKey = await getClientKey()
+  const now = Date.now()
+  const browserAttempts = activeAttemptState(await readAttemptState(cookieStore.get(ATTEMPT_COOKIE)?.value), now)
+  const serverState = activeAttemptState(serverAttempts.get(clientKey), now)
+  let attempts = serverState.count >= browserAttempts.count ? serverState : browserAttempts
+
+  if (attempts.lockedUntil && attempts.lockedUntil > now) {
+    return { success: false, retryAfterSeconds: Math.ceil((attempts.lockedUntil - now) / 1000) }
+  }
+
+  if (normalizePasscode(passcode) !== normalizePasscode(PASSCODE!)) {
+    attempts = { ...attempts, count: attempts.count + 1 }
+    if (attempts.count >= MAX_LOGIN_ATTEMPTS) attempts.lockedUntil = now + LOGIN_LOCK_SECONDS * 1000
+    serverAttempts.set(clientKey, attempts)
+    cookieStore.set(ATTEMPT_COOKIE, await encodeAttemptState(attempts), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/admin',
+      maxAge: LOGIN_WINDOW_SECONDS + LOGIN_LOCK_SECONDS,
+    })
+    return {
+      success: false,
+      retryAfterSeconds: attempts.lockedUntil ? Math.ceil((attempts.lockedUntil - now) / 1000) : undefined,
+    }
+  }
+
+  serverAttempts.delete(clientKey)
+  cookieStore.set(ATTEMPT_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/admin',
+    maxAge: 0,
+  })
+
+  const session = await encrypt({ user: 'admin' })
   cookieStore.set('session', session, COOKIE_OPTIONS)
-  return true
+  return { success: true }
 }
 
 export async function logout() {
@@ -70,7 +147,7 @@ export async function getSession() {
   if (!session) return null
   try {
     return await decrypt(session)
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -82,14 +159,14 @@ export async function updateSession(request: NextRequest) {
 
   try {
     const parsed = await decrypt(session)
-    const res = NextResponse.next()
-    res.cookies.set({
+    const response = NextResponse.next()
+    response.cookies.set({
       name: 'session',
-      value: await encrypt(parsed),
+      value: await encrypt({ user: parsed.user || 'admin' }),
       ...COOKIE_OPTIONS,
     })
-    return res
-  } catch (e) {
+    return response
+  } catch {
     return
   }
 }

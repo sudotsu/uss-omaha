@@ -1,75 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface ImageWithFallbackProps {
-  src: string
-  alt: string
-  fill?: boolean
-  width?: number
-  height?: number
-  className?: string
-  priority?: boolean
-  sizes?: string
-  quality?: number
-  unoptimized?: boolean
-  onLoad?: () => void
+  src: string; alt: string; fill?: boolean; width?: number; height?: number; className?: string; priority?: boolean; sizes?: string; quality?: number; unoptimized?: boolean; onLoad?: () => void
 }
 
-export function ImageWithFallback({
-  src,
-  alt,
-  fill = false,
-  width,
-  height,
-  className = '',
-  priority = false,
-  sizes,
-  quality,
-  unoptimized = false,
-  onLoad,
-}: ImageWithFallbackProps) {
-  const [imgSrc, setImgSrc] = useState<string>(src || '/images/placeholder.svg')
-  const [hasError, setHasError] = useState(false)
+export function ImageWithFallback(props: ImageWithFallbackProps) {
+  return <FallbackImage key={props.src || 'placeholder'} {...props} />
+}
 
-  // Sync state if prop changes
-  useEffect(() => {
-    if (!src) {
-      setImgSrc('/images/placeholder.svg')
-      setHasError(true)
-    } else {
-      setImgSrc(src)
-      setHasError(false)
-    }
-  }, [src])
-
-  const handleError = () => {
-    if (!hasError) {
-      setHasError(true)
-      setImgSrc('/images/placeholder.svg')
-    }
-  }
-
-  const commonProps = {
-    alt,
-    className,
-    priority,
-    sizes,
-    quality,
-    unoptimized,
-    onError: handleError,
-    onLoad,
-  }
-
-  if (fill) {
-    return <Image {...commonProps} src={imgSrc} fill />
-  }
-
-  if (width && height) {
-    return <Image {...commonProps} src={imgSrc} width={width} height={height} />
-  }
-
-  // Fallback to fill if neither width/height provided
-  return <Image {...commonProps} src={imgSrc} fill />
+function FallbackImage({ src, alt, fill = false, width, height, className = '', priority = false, sizes, quality, unoptimized = false, onLoad }: ImageWithFallbackProps) {
+  const [hasError, setHasError] = useState(!src)
+  const imgSrc = hasError || !src ? '/images/placeholder.svg' : src
+  const shared = { className, priority, sizes, quality, unoptimized, onError: () => setHasError(true), onLoad }
+  if (fill) return <Image src={imgSrc} alt={alt} fill {...shared} />
+  if (width && height) return <Image src={imgSrc} alt={alt} width={width} height={height} {...shared} />
+  return <Image src={imgSrc} alt={alt} fill {...shared} />
 }

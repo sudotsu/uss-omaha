@@ -6,7 +6,7 @@ metadata:
 hero:
   heading: 250 Years of Defending Freedom, Protecting Prosperity
   subheading: USS Omaha SSN-692 Memorial 2026
-  backgroundImage: /images/hero-final.webp
+  backgroundImage: /images/homepage_right_cropped.jpg
 mission:
   heading: Our Mission
   statement: To honor the service and sacrifice of the crew of USS Omaha (SSN-692) and preserve the legacy of the United States Submarine Force for future generations through education, remembrance, and community engagement at Levi Carter Park, Omaha, Nebraska.
@@ -108,6 +108,16 @@ phases:
 whatYourGiftBuilds:
   heading: What Your Gift Builds
   subheading: See how your contribution directly impacts the memorial's progress.
+  phaseLabel: Phase 4
+  items:
+    - name: Walkways
+      description: Concrete pathways allowing visitors to walk around the submarine hull and experience its true scale. These pathways will be ADA-compliant and built to last decades.
+    - name: Interpretive Exhibits
+      description: Educational panels telling the story of USS Omaha's 17-year service, the submarine force, and the crew who served. These exhibits will educate future generations about submarine warfare and sacrifice.
+    - name: Donor Recognition
+      description: Permanent bronze plaques honoring all who contributed to this memorial. Your name, or a loved one's name, will be displayed alongside fellow patriots who made this project possible.
+  promiseHeading: Our Promise to You
+  promiseText: 100% of your designated gift goes directly to building the element you choose. No administrative overhead. No ambiguity. Just your contribution, completing the USS Omaha Memorial.
 fundraisingProgress:
   raised: 823541
   goal: 1973144
@@ -196,7 +206,7 @@ callToAction:
     primaryOrg:
       name: United States Submarine Veterans Charitable Foundation (USSVCF)
       ein: 501(c)(3) EIN 95-4830806
-      website: https://www.usscvf.org/donate.html
+      website: https://www.ussvcf.org/donate.html
       email: treasurer@ussvcf.org
       mailingAddress:
         attention: OMAHA MEMORIAL FUND
@@ -217,7 +227,7 @@ callToAction:
     primaryOrg:
       name: United States Submarine Veterans Charitable Foundation (USSVCF)
       ein: 501(c)(3) EIN 95-4830806
-      website: https://www.usscvf.org/donate.html
+      website: https://www.ussvcf.org/donate.html
       email: treasurer@ussvcf.org
       mailingAddress:
         attention: OMAHA MEMORIAL FUND
@@ -306,11 +316,11 @@ navy250:
   logo: /images/logos/navy-250-authentic.png
   heading: 250 Years of Defending Freedom, Protecting Prosperity
   countdownEnabled: false
-  deadline: '2026-05-16T10:00:00'
+  deadline: '2026-05-16T15:00:00Z'
   deadlineLabel: Armed Forces Day 2026
   deadlineText: Countdown to the Memorial Dedication Ceremony
-  subheading: USS Nebraska
-  subtitle: 1993 - Present
+  subheading: USS Omaha SSN-692
+  subtitle: 1978 - 1995
   images:
     - /images/hero-sub.png
     - /images/sub-commissioning.png
