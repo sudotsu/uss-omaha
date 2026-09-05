@@ -3,8 +3,8 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard'
 
 export default async function DashboardPage() {
   try {
-    const content = await loadDraftContent()
-    return <AdminDashboard initialData={content} />
+    const { content, sha } = await loadDraftContent()
+    return <AdminDashboard initialData={content} initialContentSha={sha} />
   } catch (error) {
     console.error('Failed to load dashboard content:', error)
     return (
