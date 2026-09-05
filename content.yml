@@ -1,342 +1,315 @@
-# USS Omaha SSN-692 Memorial Content
-# Single source of truth for web + print
-
 metadata:
-  title: "USS Omaha SSN-692 Memorial"
-  subtitle: "Honoring Service, Preserving Legacy"
-  year: "2026"
-  mode: "memorial"
-
+  title: USS Omaha SSN-692 Memorial
+  subtitle: Honoring Service, Preserving Legacy
+  year: '2026'
+  mode: memorial
 hero:
-  heading: "250 Years of Defending Freedom, Protecting Prosperity"
-  subheading: "USS Omaha SSN-692 Memorial 2026"
-  backgroundImage: "/images/hero-final.webp"
-
+  heading: 250 Years of Defending Freedom, Protecting Prosperity
+  subheading: USS Omaha SSN-692 Memorial 2026
+  backgroundImage: /images/hero-final.webp
 mission:
-  heading: "Our Mission"
-  statement: "To honor the service and sacrifice of the crew of USS Omaha (SSN-692) and preserve the legacy of the United States Submarine Force for future generations through education, remembrance, and community engagement at Levi Carter Park, Omaha, Nebraska."
+  heading: Our Mission
+  statement: To honor the service and sacrifice of the crew of USS Omaha (SSN-692) and preserve the legacy of the United States Submarine Force for future generations through education, remembrance, and community engagement at Levi Carter Park, Omaha, Nebraska.
   highlights:
-    - "Honor Service"
-    - "Preserve Legacy"
-    - "Community Engagement"
-
+    - Honor Service
+    - Preserve Legacy
+    - Community Engagement
 agenda:
-  heading: "USS Omaha SSN-692 Memorial Outline"
+  heading: USS Omaha SSN-692 Memorial Outline
   items:
-    - title: "Background"
-      description: "Historical context of the project."
-    - title: "Project Details"
-      description: "Specs and plans for the memorial."
-    - title: "Project Execution"
-      description: "Phases of construction and implementation."
-    - title: "Way Forward"
-      description: "Future goals and timeline."
-
+    - title: Background
+      description: Historical context of the project.
+    - title: Project Details
+      description: Specs and plans for the memorial.
+    - title: Project Execution
+      description: Phases of construction and implementation.
+    - title: Way Forward
+      description: Future goals and timeline.
 background:
-  heading: "Background"
+  heading: Background
   paragraphs:
-    - "In April 1995, the City of Omaha formed a committee to explore the possibility of preserving some of the naval history of the USS Omaha for display in the city."
-    - "Items such as the commissioning plate, the boat's bell, selected China pieces, flags, and others were acquired and displayed at Freedom Park through 2007."
+    - In April 1995, the City of Omaha formed a committee to explore the possibility of preserving some of the naval history of the USS Omaha for display in the city.
+    - Items such as the commissioning plate, the boat's bell, selected China pieces, flags, and others were acquired and displayed at Freedom Park through 2007.
   keyPoints:
-    - "Committee formed in 1995"
-    - "Artifacts preserved at Freedom Park"
+    - Committee formed in 1995
+    - Artifacts preserved at Freedom Park
   milestones:
-    - year: "1995"
-      month: "April"
-      event: "City of Omaha formed committee to explore preserving USS Omaha naval history"
-    - year: "2000"
-      month: "October"
-      event: "USS Cole attack delays recycling of USS Omaha"
-    - year: "2013"
-      month: "April"
-      event: "Groundbreaking ceremony conducted at Levi Carter Park"
-
+    - year: '1995'
+      month: April
+      event: City of Omaha formed committee to explore preserving USS Omaha naval history
+    - year: '2000'
+      month: October
+      event: USS Cole attack delays recycling of USS Omaha
+    - year: '2013'
+      month: April
+      event: Groundbreaking ceremony conducted at Levi Carter Park
 letters:
-  heading: "Official Support Letters"
-  description: "Letters from city officials and the Navy."
+  heading: Official Support Letters
+  description: Letters from city officials and the Navy.
   items:
-    - title: "Mayor Hal Daub's Letter (April 19, 1995)"
-      image: "/images/letter-daub-1995.png"
-      excerpt: "The nuclear submarine USS Omaha (SSN 692) is undergoing decommissioning..."
-    - title: "Mayor Jim Suttle's Letter (December 6, 2011)"
-      image: "/images/letter-suttle-2011.png"
-      excerpt: "On behalf of the citizens of Omaha, Nebraska I formally request..."
-    - title: "US Navy Response (December 27, 2011)"
-      image: "/images/letter-navy-2011.png"
-      excerpt: "The navy strongly endorses the display of naval vessels..."
-
+    - title: Mayor Hal Daub's Letter (April 19, 1995)
+      image: /images/letter-daub-1995.png
+      excerpt: The nuclear submarine USS Omaha (SSN 692) is undergoing decommissioning...
+    - title: Mayor Jim Suttle's Letter (December 6, 2011)
+      image: /images/letter-suttle-2011.png
+      excerpt: On behalf of the citizens of Omaha, Nebraska I formally request...
+    - title: US Navy Response (December 27, 2011)
+      image: /images/letter-navy-2011.png
+      excerpt: The navy strongly endorses the display of naval vessels...
 submarineFacts:
-  heading: "USS Omaha SSN 692"
+  heading: USS Omaha SSN 692
   facts:
-    - label: "Class"
-      value: "Los Angeles Fast Attack Submarine"
-    - label: "Commissioned"
-      value: "March 11, 1978"
-    - label: "Decommissioned"
-      value: "October 5, 1995"
-  image: "/images/history/launch.jpg"
-
+    - label: Class
+      value: Los Angeles Fast Attack Submarine
+    - label: Commissioned
+      value: March 11, 1978
+    - label: Decommissioned
+      value: October 5, 1995
+  image: /images/history/launch.jpg
 timeline:
-  heading: "USS Omaha SSN 692 History"
+  heading: USS Omaha SSN 692 History
   milestones:
-    - date: "Feb 1976"
-      title: "Launched"
-      details: "USS Omaha launched at Groton, CT"
-    - date: "Mar 1978"
-      title: "Commissioned"
-      details: "Official commissioning ceremony"
-    - date: "Oct 1995"
-      title: "Decommissioned"
-      details: "Service ends, retirement begins"
-
+    - date: Feb 1976
+      title: Launched
+      details: USS Omaha launched at Groton, CT
+    - date: Mar 1978
+      title: Commissioned
+      details: Official commissioning ceremony
+    - date: Oct 1995
+      title: Decommissioned
+      details: Service ends, retirement begins
 phases:
-  heading: "Project Phases"
+  heading: Project Phases
   phaseList:
     - number: 1
-      title: "Phase 1"
-      description: "Transport Components, Initial Site Prep"
-      status: "Completed"
-      cost: "$181,198"
+      title: Phase 1
+      description: Transport Components, Initial Site Prep
+      status: Completed
+      cost: $181,198
       percentComplete: 100
     - number: 2
-      title: "Phase 2"
-      description: "Refurbish Components, Installation on Site"
-      status: "In Progress"
-      cost: "$314,463"
+      title: Phase 2
+      description: Refurbish Components, Installation on Site
+      status: In Progress
+      cost: $314,463
       percentComplete: 16
     - number: 3
-      title: "Phase 3"
-      description: "Complete Hull, Initial Landscaping"
-      status: "Planned"
-      cost: "$439,126"
+      title: Phase 3
+      description: Complete Hull, Initial Landscaping
+      status: Planned
+      cost: $439,126
       percentComplete: 0
     - number: 4
-      title: "Phase 4"
-      description: "Complete Walkways, Exhibits"
-      status: "Planned"
-      cost: "$1,243,756"
+      title: Phase 4
+      description: Complete Walkways, Exhibits
+      status: Planned
+      cost: $1,243,756
       percentComplete: 0
-
 whatYourGiftBuilds:
-  heading: "What Your Gift Builds"
-  subheading: "See how your contribution directly impacts the memorial's progress."
-
+  heading: What Your Gift Builds
+  subheading: See how your contribution directly impacts the memorial's progress.
 fundraisingProgress:
   raised: 823541
   goal: 1997345
   donorCount: 127
-  lastGiftTime: "2 hours ago"
-
+  lastGiftTime: 2 hours ago
 budget:
-  heading: "Budget & Remaining Need"
-  totalRemaining: "$1,997,345"
-  note: "Cost Estimates as of July 2025. Total Cost Remaining includes Design & Construction Admin & Contingency Costs."
-
+  heading: Budget & Remaining Need
+  totalRemaining: $1,997,345
+  note: Cost Estimates as of July 2025. Total Cost Remaining includes Design & Construction Admin & Contingency Costs.
 locationShift:
-  heading: "Freedom Park Site"
-  subtitle: "The initial thought was to locate the USS Omaha at Freedom Park. That changed after the Summer 2011 Missouri River Flood."
-  floodImage: "/images/gallery/Freedom Park Flood Photo-July 2011.webp"
-  floodCaption: "Freedom Park during the 2011 Missouri River Flood"
-  newLocationHeading: "Levi Carter Park Site"
-  newLocationBody: "Instead of relocating Freedom Park, it was decided to find a location just for the USS Omaha & the USS Nebraska. (Future Plan) Levi Carter Park, located along Abbott Drive, was chosen as the site."
-  mapImage: "/images/location/levi-carter-map-authentic.jpg"
-  mapCaption: "Levi Carter Park Location Map"
-
+  heading: Freedom Park Site
+  subtitle: The initial thought was to locate the USS Omaha at Freedom Park. That changed after the Summer 2011 Missouri River Flood.
+  floodImage: /images/gallery/Freedom Park Flood Photo-July 2011.webp
+  floodCaption: Freedom Park during the 2011 Missouri River Flood
+  newLocationHeading: Levi Carter Park Site
+  newLocationBody: Instead of relocating Freedom Park, it was decided to find a location just for the USS Omaha & the USS Nebraska. (Future Plan) Levi Carter Park, located along Abbott Drive, was chosen as the site.
+  mapImage: /images/location/levi-carter-map-authentic.jpg
+  mapCaption: Levi Carter Park Location Map
 sitePlan:
-  heading: "USS Omaha SSN 692 - The Site Plan"
-  description: "The design recreates the submarine on the ground, allowing people to experience its size."
-  detail: "Interpretive panels placed along the walkways provide a history of the USS Omaha SSN 692."
-  renderImage: "/images/gallery/watercolor-site-plan.jpg"
-
+  heading: USS Omaha SSN 692 - The Site Plan
+  description: The design recreates the submarine on the ground, allowing people to experience its size.
+  detail: Interpretive panels placed along the walkways provide a history of the USS Omaha SSN 692.
+  renderImage: /images/gallery/watercolor-site-plan.jpg
 gallery:
-  heading: "USS Omaha SSN 692"
+  heading: USS Omaha SSN 692
   images:
-    - src: "/images/gallery/watercolor-aerial.jpg"
-      caption: "Watercolor Concept: Aerial view of the memorial park"
-    - src: "/images/gallery/watercolor-ceremony.jpg"
-      caption: "Watercolor Concept: Dedication Ceremony view"
-    - src: "/images/gallery/memorial-watercolor.jpg"
-      caption: "Watercolor Concept: Memorial perspective"
-    - src: "/images/gallery/P6173228.webp"
-      caption: "Site Preparation: Early groundwork at the Levi Carter Park location"
-    - src: "/images/gallery/P6173233.webp"
-      caption: "Construction Progress: Foundation work for the memorial site"
-
+    - src: /images/gallery/watercolor-aerial.jpg
+      caption: 'Watercolor Concept: Aerial view of the memorial park'
+    - src: /images/gallery/watercolor-ceremony.jpg
+      caption: 'Watercolor Concept: Dedication Ceremony view'
+    - src: /images/gallery/memorial-watercolor.jpg
+      caption: 'Watercolor Concept: Memorial perspective'
+    - src: /images/gallery/P6173228.webp
+      caption: 'Site Preparation: Early groundwork at the Levi Carter Park location'
+    - src: /images/gallery/P6173233.webp
+      caption: 'Construction Progress: Foundation work for the memorial site'
 executionPhotos:
-  heading: "USS Omaha SSN 692 Phase 1 Execution"
+  heading: USS Omaha SSN 692 Phase 1 Execution
   photos:
-    - src: "/images/execution/concrete-pour.jpg"
-      caption: "Pouring concrete for the memorial foundation"
-      year: "2015"
-    - src: "/images/execution/concrete-pad.jpg"
-      caption: "Construction of the concrete pads"
-      year: "2015"
-    - src: "/images/execution/rudder-arrival.jpg"
-      caption: "Upper half of the rudder with yoke attached arrives in Omaha (2012)"
-      year: "2012"
-    - src: "/images/execution/groundbreaking.jpg"
-      caption: "Groundbreaking Ceremony, 19 April 2013"
-      year: "2013"
-    - src: "/images/phase1-construction-1.png"
-      caption: "Construction of the concrete pads for the sail and rudder"
-      year: "2015"
-
-    - src: "/images/phase1-complete.png"
-      caption: "View south from the finished Sail Pad to the finished Rudder Pad"
-      year: "2015"
-
+    - src: /images/execution/concrete-pour.jpg
+      caption: Pouring concrete for the memorial foundation
+      year: '2015'
+    - src: /images/execution/concrete-pad.jpg
+      caption: Construction of the concrete pads
+      year: '2015'
+    - src: /images/execution/rudder-arrival.jpg
+      caption: Upper half of the rudder with yoke attached arrives in Omaha (2012)
+      year: '2012'
+    - src: /images/execution/groundbreaking.jpg
+      caption: Groundbreaking Ceremony, 19 April 2013
+      year: '2013'
+    - src: /images/phase1-construction-1.png
+      caption: Construction of the concrete pads for the sail and rudder
+      year: '2015'
+    - src: /images/phase1-complete.png
+      caption: View south from the finished Sail Pad to the finished Rudder Pad
+      year: '2015'
 whyNow:
-  heading: "USS Omaha SSN 692 Relaunch 2025 - Why Now?"
+  heading: USS Omaha SSN 692 Relaunch 2025 - Why Now?
   projects:
-    - name: "Omaha Airport Terminal Renovation & Addition"
-      cost: "$950 Million"
-    - name: "Omaha Airport Business Park"
-      cost: "$90 Million"
-    - name: "Levi Carter Park Sports Complex & Community Center"
-      cost: "$45 Million"
-    - name: "Omaha Innovation District"
-      cost: "$30 Million"
-    - name: "Omaha Inland Port Authority Future Housing"
-      cost: "$30 Million"
-    - name: "Boyd Park Baseball Complex Renovation"
-      cost: "$10 Million"
-    - name: "Levi Carter Park Trail Extension/Completion"
-      cost: "$2.9 Million"
-    - name: "Jerry Parks (Football) Renovation"
-      cost: "TBD"
+    - name: Omaha Airport Terminal Renovation & Addition
+      cost: $950 Million
+    - name: Omaha Airport Business Park
+      cost: $90 Million
+    - name: Levi Carter Park Sports Complex & Community Center
+      cost: $45 Million
+    - name: Omaha Innovation District
+      cost: $30 Million
+    - name: Omaha Inland Port Authority Future Housing
+      cost: $30 Million
+    - name: Boyd Park Baseball Complex Renovation
+      cost: $10 Million
+    - name: Levi Carter Park Trail Extension/Completion
+      cost: $2.9 Million
+    - name: Jerry Parks (Football) Renovation
+      cost: TBD
   memorial:
-    name: "USS OMAHA SSN 692 MEMORIAL"
-    cost: "$2 MILLION"
-  tagline: "USS OMAHA SSN 692 RELAUNCH 2026"
-
+    name: USS OMAHA SSN 692 MEMORIAL
+    cost: $2 MILLION
+  tagline: USS OMAHA SSN 692 RELAUNCH 2026
 callToAction:
   memorial:
-    heading: "USS Omaha Call to Action"
-    tagline: "Honor the Past. Build the Future."
-    donationHeading: "Support the Memorial"
+    heading: USS Omaha Call to Action
+    tagline: Honor the Past. Build the Future.
+    donationHeading: Support the Memorial
     primaryOrg:
-      name: "United States Submarine Veterans Charitable Foundation (USSVCF)"
-      ein: "501(c)(3) EIN 95-4830806"
-      website: "https://www.usscvf.org/donate.html"
-      email: "treasurer@ussvcf.org"
+      name: United States Submarine Veterans Charitable Foundation (USSVCF)
+      ein: 501(c)(3) EIN 95-4830806
+      website: https://www.usscvf.org/donate.html
+      email: treasurer@ussvcf.org
       mailingAddress:
-        attention: "OMAHA MEMORIAL FUND"
-        address: "PO Box 1063"
-        city: "Groton, CT 06340-1063"
-      phone: "(360) 337-2978"
+        attention: OMAHA MEMORIAL FUND
+        address: PO Box 1063
+        city: Groton, CT 06340-1063
+      phone: (360) 337-2978
     alternateOrg:
-      name: "Omaha Parks Foundation"
-      ein: "501(c)(3) EIN 27-3185565"
-      note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
-    taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
-    pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
+      name: Omaha Parks Foundation
+      ein: 501(c)(3) EIN 27-3185565
+      note: This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed.
+    taxNote: ALL DONATIONS ARE TAX-DEDUCTIBLE
+    pledgeFormText: Download Pledge Form
+    pledgeFormUrl: /Pledge_Form_Blank_Final.pdf
   donor:
-    heading: "USS Omaha Call to Action"
-    tagline: "Honor the Past. Build the Future."
-    donationHeading: "Invest in Legacy"
+    heading: USS Omaha Call to Action
+    tagline: Honor the Past. Build the Future.
+    donationHeading: Invest in Legacy
     primaryOrg:
-      name: "United States Submarine Veterans Charitable Foundation (USSVCF)"
-      ein: "501(c)(3) EIN 95-4830806"
-      website: "https://www.usscvf.org/donate.html"
-      email: "treasurer@ussvcf.org"
+      name: United States Submarine Veterans Charitable Foundation (USSVCF)
+      ein: 501(c)(3) EIN 95-4830806
+      website: https://www.usscvf.org/donate.html
+      email: treasurer@ussvcf.org
       mailingAddress:
-        attention: "OMAHA MEMORIAL FUND"
-        address: "PO Box 1063"
-        city: "Groton, CT 06340-1063"
-      phone: "(360) 337-2978"
+        attention: OMAHA MEMORIAL FUND
+        address: PO Box 1063
+        city: Groton, CT 06340-1063
+      phone: (360) 337-2978
     alternateOrg:
-      name: "Omaha Parks Foundation"
-      ein: "501(c)(3) EIN 27-3185565"
-      note: "This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed."
-    taxNote: "ALL DONATIONS ARE TAX-DEDUCTIBLE"
-    pledgeFormText: "Download Pledge Form"
-    pledgeFormUrl: "/Pledge_Form_Blank_Final.pdf"
-
+      name: Omaha Parks Foundation
+      ein: 501(c)(3) EIN 27-3185565
+      note: This Gift shall be added to the USS Omaha Memorial Project held by Omaha Parks Foundation. An advancement fee of 2% may be assessed.
+    taxNote: ALL DONATIONS ARE TAX-DEDUCTIBLE
+    pledgeFormText: Download Pledge Form
+    pledgeFormUrl: /Pledge_Form_Blank_Final.pdf
 volunteer:
-  heading: "USS Omaha Call to Action"
-  subheading: "Community Engagement or Volunteer Opportunities"
+  heading: USS Omaha Call to Action
+  subheading: Community Engagement or Volunteer Opportunities
   contact:
-    name: "General Info"
-    email: "info@ussomahamemorial.org"
-
+    name: General Info
+    email: info@ussomahamemorial.org
 stakeholders:
-  heading: "USS Omaha Memorial Action Committee"
+  heading: USS Omaha Memorial Action Committee
   members:
-    - name: "Mark Thompson"
-      title: "USSVI Marlin Base, Base CDR"
-      subtitle: "USN LCDR Ret"
-    - name: "Jeff Green"
-      title: "Project Program Engineer"
-    - name: "Jay Armstrong"
-      title: "Community Member, USN Vet"
-    - name: "Lauren Marie Foster"
-      title: "Omaha Parks & Recreation Board Chair"
-
+    - name: Mark Thompson
+      title: USSVI Marlin Base, Base CDR
+      subtitle: USN LCDR Ret
+    - name: Jeff Green
+      title: Project Program Engineer
+    - name: Jay Armstrong
+      title: Community Member, USN Vet
+    - name: Lauren Foster
+      title: Omaha Parks & Recreation Board Chair
 close:
-  heading: "Questions?"
-  subheading: "USS OMAHA SSN 692 RELAUNCH"
+  heading: Questions?
+  subheading: USS OMAHA SSN 692 RELAUNCH
   contactInfo:
-    organization: "USSVI MARLIN BASE"
-    website: "www.marlinbase.org"
-    contact: "Mark Thompson"
-
+    organization: USSVI MARLIN BASE
+    website: www.marlinbase.org
+    contact: Mark Thompson
 presentedBy:
-  heading: "Presented By:"
+  heading: 'Presented By:'
   presenters:
-    - name: "Mark Thompson, USN LCDR Ret"
-      org: "US Submarine Veterans, Inc. USSVI"
-      title: "Marlin Base CDR"
-
+    - name: Mark Thompson, USN LCDR Ret
+      org: US Submarine Veterans, Inc. USSVI
+      title: Marlin Base CDR
 footer:
   address:
-    - "Bellevue University"
-    - "Military Veteran Services Center MVSC ESB 4476"
-    - "John B. Muller Administrative Services Building"
-    - "812 Bruin Blvd, Bellevue, NE 68005"
+    - Bellevue University
+    - Military Veteran Services Center MVSC ESB 4476
+    - John B. Muller Administrative Services Building
+    - 812 Bruin Blvd, Bellevue, NE 68005
   contact:
-    name: "General Info"
-    email: "info@ussomahamemorial.org"
-    phone: "(402) 557-7820"
+    name: General Info
+    email: info@ussomahamemorial.org
+    phone: (402) 557-7820
   quickLinks:
-    - label: "Home"
-      href: "/"
-    - label: "Mission"
-      href: "#mission"
-    - label: "Phases"
-      href: "#phases"
-    - label: "Gallery"
-      href: "#gallery"
-    - label: "Donate"
-      href: "https://ussomahamemorial.org/donate"
+    - label: Home
+      href: /
+    - label: Mission
+      href: '#mission'
+    - label: Phases
+      href: '#phases'
+    - label: Gallery
+      href: '#gallery'
+    - label: Donate
+      href: https://ussomahamemorial.org/donate
   logos:
-    - src: "/images/logos/omaha-parks.png"
-      alt: "Omaha Parks Foundation"
-      href: "https://omahaparksfoundation.org/"
-    - src: "/images/logos/ussvi-marlin.png"
-      alt: "USSVI Marlin Base"
-      href: "http://www.marlinbase.org/"
-    - src: "/images/logos/ussvcf.webp"
-      alt: "U.S. Submarine Veterans Charitable Foundation"
-      href: "https://ussvcf.org/"
-    - src: "/images/logos/usnl-seal.jpg"
-      alt: "US Navy League"
-      href: "https://www.navyleague.org/"
-    - src: "/images/logos/Big-Red-Sub-Club.png"
-      alt: "The Big Red Sub Club - USS Nebraska SSBN-739"
-      href: "https://bigredsubclub.com/"
-    - src: "/images/logos/national-garden-club.png"
-      alt: "National Garden Club, Inc"
-      href: "https://gardenclub.org/"
-
+    - src: /images/logos/omaha-parks.png
+      alt: Omaha Parks Foundation
+      href: https://omahaparksfoundation.org/
+    - src: /images/logos/ussvi-marlin.png
+      alt: USSVI Marlin Base
+      href: http://www.marlinbase.org/
+    - src: /images/logos/ussvcf.webp
+      alt: U.S. Submarine Veterans Charitable Foundation
+      href: https://ussvcf.org/
+    - src: /images/logos/usnl-seal.jpg
+      alt: US Navy League
+      href: https://www.navyleague.org/
+    - src: /images/logos/Big-Red-Sub-Club.png
+      alt: The Big Red Sub Club - USS Nebraska SSBN-739
+      href: https://bigredsubclub.com/
+    - src: /images/logos/national-garden-club.png
+      alt: National Garden Club, Inc
+      href: https://gardenclub.org/
 navy250:
-  logo: "/images/logos/navy-250-authentic.png"
-  heading: "250 Years of Defending Freedom, Protecting Prosperity"
-  deadline: "2026-05-16T10:00:00"
-  deadlineLabel: "Armed Forces Day 2026"
-  deadlineText: "Countdown to the Memorial Dedication Ceremony"
-  subheading: "USS Nebraska"
-  subtitle: "1993 - Present"
+  logo: /images/logos/navy-250-authentic.png
+  heading: 250 Years of Defending Freedom, Protecting Prosperity
+  deadline: '2026-05-16T10:00:00'
+  deadlineLabel: Armed Forces Day 2026
+  deadlineText: Countdown to the Memorial Dedication Ceremony
+  subheading: USS Nebraska
+  subtitle: 1993 - Present
   images:
-    - "/images/hero-sub.png"
-    - "/images/sub-commissioning.png"
+    - /images/hero-sub.png
+    - /images/sub-commissioning.png
