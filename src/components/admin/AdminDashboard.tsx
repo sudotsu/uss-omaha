@@ -70,10 +70,22 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [activeSection, setActiveSection] = useState('metadata')
-  const [rawYaml, setRawYaml] = useState('')
+  const [rawYaml, setRawYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
+  const [lastPublishedYaml, setLastPublishedYaml] = useState(() => yaml.dump(initialData, { indent: 2, lineWidth: -1 }))
   const [yamlError, setYamlError] = useState<string | null>(null)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const hasUnpublishedChanges = rawYaml !== lastPublishedYaml
+
+  // Warn before closing or refreshing with unpublished edits.
+  useEffect(() => {
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      if (!hasUnpublishedChanges) return
+      event.preventDefault()
+    }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [hasUnpublishedChanges])
 
   // Sync raw YAML when form data changes
   useEffect(() => {
@@ -92,6 +104,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
     try {
       const result = await saveContent(data)
       if (result.success) {
+        setLastPublishedYaml(yaml.dump(data, { indent: 2, lineWidth: -1 }))
         setMessage({ type: 'success', text: result.message })
       } else {
         setMessage({ type: 'error', text: result.message })
@@ -252,14 +265,14 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
         <div className="p-6 bg-slate-800/50 border-t border-slate-700 space-y-3">
            <button
             onClick={handleSave}
-            disabled={isSaving || !!yamlError}
+            disabled={isSaving || !!yamlError || !hasUnpublishedChanges}
             className={`w-full py-4 rounded-xl font-black text-lg shadow-xl transition-all active:scale-95 uppercase italic tracking-tighter ${
-              isSaving
+              isSaving || !hasUnpublishedChanges
                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-500 text-white hover:shadow-green-500/20'
             }`}
           >
-            {isSaving ? 'Syncing...' : 'Deploy Changes'}
+            {isSaving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Published'}
           </button>
           <form action={logout}>
             <button type="submit" className="w-full py-2 text-slate-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest transition-colors">
@@ -291,13 +304,13 @@ export function AdminDashboard({ initialData }: AdminDashboardProps) {
             <div className="flex-1">
               <span className="font-bold text-lg block">{message.text}</span>
               {message.type === 'success' && (
-                <p className="text-sm mt-1 opacity-80 italic">Update pushed to GitHub. Review the preview branch to sign off.</p>
+                <p className="text-sm mt-1 opacity-80 italic">Vercel usually updates the live site within one or two minutes.</p>
               )}
             </div>
             <div className="flex gap-3 w-full md:w-auto">
               {message.type === 'success' && (
-                <a href="https://uss-omaha-git-admin-content-updates-sudotsu.vercel.app" target="_blank" rel="noopener noreferrer" className="bg-white text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-yellow-500 transition-all text-center flex-1 md:flex-none italic">
-                  Launch Preview
+                <a href="/" target="_blank" rel="noopener noreferrer" className="bg-white text-slate-900 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-yellow-500 transition-all text-center flex-1 md:flex-none italic">
+                  View Live Site
                 </a>
               )}
               <button onClick={() => setMessage(null)} className="text-xl opacity-50 hover:opacity-100 px-2" aria-label="Dismiss message">&times;</button>
