@@ -10,8 +10,7 @@ import { getSession } from '@/lib/auth'
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
-const TARGET_BRANCH = 'admin-content-updates'
-const BASE_BRANCH = 'main'
+const TARGET_BRANCH = 'main'
 
 function validateConfig() {
   if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
@@ -60,6 +59,25 @@ export async function loadDraftContent(): Promise<ContentData> {
   return safeLoadLocalContent()
 }
 
+function validateContent(data: ContentData) {
+  const requiredSections = [
+    'metadata', 'hero', 'mission', 'agenda', 'background',
+    'letters', 'submarineFacts', 'timeline', 'phases',
+    'fundraisingProgress', 'budget', 'locationShift',
+    'sitePlan', 'gallery', 'executionPhotos', 'whyNow',
+    'callToAction', 'volunteer', 'stakeholders', 'close',
+    'presentedBy', 'footer', 'navy250',
+  ]
+
+  const missing = requiredSections.filter((key) => !(data as any)?.[key])
+  if (missing.length > 0) {
+    throw new Error(`Cannot publish: missing sections [${missing.join(', ')}]`)
+  }
+  if (!Array.isArray(data.agenda.items)) throw new Error('Cannot publish: agenda items are invalid')
+  if (!Array.isArray(data.phases.phaseList)) throw new Error('Cannot publish: project phases are invalid')
+  if (!Array.isArray(data.gallery.images)) throw new Error('Cannot publish: gallery images are invalid')
+}
+
 export async function saveContent(newData: ContentData) {
   const session = await getSession()
   if (!session) {
@@ -87,38 +105,9 @@ export async function saveContent(newData: ContentData) {
   const octokit = new Octokit({ auth: GITHUB_TOKEN })
 
   try {
-    // 1. Check if branch exists
-    let branchExists = true
-    try {
-      await octokit.rest.repos.getBranch({
-        owner: REPO_OWNER!,
-        repo: REPO_NAME!,
-        branch: TARGET_BRANCH,
-      })
-    } catch (e: any) {
-      if (e.status === 404) {
-        branchExists = false
-      } else {
-        throw e // Re-throw 401, 429, 500 etc.
-      }
-    }
+    validateContent(newData)
 
-    if (!branchExists) {
-      const { data: baseRef } = await octokit.rest.git.getRef({
-        owner: REPO_OWNER!,
-        repo: REPO_NAME!,
-        ref: `heads/${BASE_BRANCH}`,
-      })
-
-      await octokit.rest.git.createRef({
-        owner: REPO_OWNER!,
-        repo: REPO_NAME!,
-        ref: `refs/heads/${TARGET_BRANCH}`,
-        sha: baseRef.object.sha,
-      })
-    }
-
-    // 2. Get file SHA from the draft branch
+    // Read the latest published file so concurrent or duplicate saves fail safely
     let fileData: any
     try {
       const response = await octokit.rest.repos.getContent({
@@ -137,21 +126,30 @@ export async function saveContent(newData: ContentData) {
 
     if (!Array.isArray(fileData) && fileData.type === 'file') {
       const sha = fileData.sha
+      const currentYaml = Buffer.from(fileData.content, 'base64').toString('utf8')
       const yamlStr = yaml.dump(newData, { indent: 2, lineWidth: -1 })
 
-      await octokit.rest.repos.createOrUpdateFileContents({
+      if (currentYaml.trim() === yamlStr.trim()) {
+        return { success: true, changed: false, message: 'Everything is already published.' }
+      }
+
+      const { data: update } = await octokit.rest.repos.createOrUpdateFileContents({
         owner: REPO_OWNER!,
         repo: REPO_NAME!,
         path: 'content.yml',
-        message: 'Update content via Admin UI (Needs Review)',
+        message: 'Publish content via Admin Portal',
         content: Buffer.from(yamlStr).toString('base64'),
         sha: sha,
         branch: TARGET_BRANCH,
       })
 
-      return { 
-        success: true, 
-        message: `Changes pushed to branch '${TARGET_BRANCH}'. Check GitHub to review and merge!` 
+      revalidatePath('/')
+
+      return {
+        success: true,
+        changed: true,
+        message: 'Published. The live site is updating now.',
+        commitUrl: update.commit.html_url,
       }
     }
     
